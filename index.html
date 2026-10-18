@@ -2635,7 +2635,26 @@ window.SCG_DATA2 = {"titulo":"Caso 2 · Del plan al pago: Clínica Municipal \"S
   const esGuiada = () => S.modo === 'guiada';
   const bloqueado = () => S.modo === 'evaluacion' && !!S.entregado;
   const verCalif = () => esGuiada() || !!S.entregado;
-  const lineas = () => Motor.diario(S.polizas, OPS);
+  /* Pólizas que entran a los registros. En el Caso 2, la póliza del presupuesto aprobado no se guarda en el avance:
+     el sistema la deriva siempre del presupuesto oficial del caso, y solo existe si el presupuesto ya se publicó.
+     Así nunca falta ni queda desactualizada (avances importados, archivos editados o cambio de clave de grupo). */
+  function polizasSistema(no) {
+    const ls = SOL.filter((l) => l.a === no);
+    return {
+      contable: ls.filter((l) => l.c[0] !== '8').map((l) => ({ c: l.c, cargo: l.cargo || '', abono: l.abono || '' })),
+      presupuestal: ls.filter((l) => l.c[0] === '8').map((l) => ({ c: l.c, p: l.p, cargo: l.cargo || '', abono: l.abono || '' })),
+      clasif: '', guardada: true, auto: true,
+    };
+  }
+  function polizasEf() {
+    if (!ES2) return S.polizas;
+    const p = Object.assign({}, S.polizas);
+    OPS.filter((o) => o.auto).forEach((o) => { if (S.aprob && S.aprob.publicado) p[o.no] = polizasSistema(o.no); else delete p[o.no]; });
+    return p;
+  }
+  // Caso 2: pólizas de ejecución guardadas sin presupuesto publicado (solo ocurre con avances importados o editados).
+  const ejecucionSinPresupuesto = () => ES2 && !(S.aprob && S.aprob.publicado) && OPS.some((o) => !o.auto && S.polizas[o.no] && S.polizas[o.no].guardada);
+  const lineas = () => Motor.diario(polizasEf(), OPS);
   // En el Caso 2 la póliza del presupuesto aprobado la genera el sistema y no se califica.
   const OPS_CAL = () => OPS.filter((o) => !o.auto);
   const calificar = () => (ES2 ? Calificador.calificar(S.polizas, SOL, OPS_CAL(), S.vistas, null) : Calificador.calificar(S.polizas, SOL, OPS, S.vistas, CLASIF));
@@ -2728,6 +2747,11 @@ window.SCG_DATA2 = {"titulo":"Caso 2 · Del plan al pago: Clínica Municipal \"S
         <textarea class="json" id="texto-manual" readonly>${esc(UI.textoManual.texto)}</textarea>
         <div class="acciones"><button class="btn prim" data-acc="copiar-texto">Copiar</button></div></div></div>`);
     }
+    if (ejecucionSinPresupuesto() && ['diario', 'mayor', 'balanza', 'presupuesto', 'estados'].includes(v)) {
+      area.insertAdjacentHTML('afterbegin', `<div class="aviso err"><b>Falta publicar el presupuesto aprobado.</b> Hay pólizas de ejecución registradas, pero no existe
+        la póliza del presupuesto aprobado: por eso la cuenta 8.2.2 Presupuesto de Egresos por Ejercer puede aparecer con saldo contrario a su naturaleza.
+        Publique el presupuesto en <a href="#aprobacion">Aprobación del presupuesto</a>.</div>`);
+    }
     if (v === 'captura') prepararCaptura();
   }
 
@@ -2793,7 +2817,7 @@ window.SCG_DATA2 = {"titulo":"Caso 2 · Del plan al pago: Clínica Municipal \"S
 
   /* ---------------- Tablero ---------------- */
   function estadoOp(no, cal) {
-    const p = S.polizas[no];
+    const p = polizasEf()[no];
     if (!p || !p.guardada) return 'pendiente';
     if (opPorNo(no).auto) return 'auto';
     if (!esGuiada()) return 'capturado';
@@ -2904,7 +2928,7 @@ window.SCG_DATA2 = {"titulo":"Caso 2 · Del plan al pago: Clínica Municipal \"S
       <div class="acciones">
         <button class="btn" data-acc="mover" data-v="-1" ${i === 0 ? 'disabled' : ''} aria-label="Operación anterior">‹ Anterior</button>
         <div class="campo"><label for="sel-op" class="sr">Operación</label>
-          <select id="sel-op">${OPS.map((o) => `<option value="${o.no}" ${o.no === no ? 'selected' : ''}>${o.no === 'SI' ? 'SI · Apertura' : 'Operación ' + o.no}${S.polizas[o.no] && S.polizas[o.no].guardada ? ' ✓' : ''}</option>`).join('')}</select></div>
+          <select id="sel-op">${OPS.map((o) => `<option value="${o.no}" ${o.no === no ? 'selected' : ''}>${o.no === 'SI' ? 'SI · Apertura' : 'Operación ' + o.no}${polizasEf()[o.no] && polizasEf()[o.no].guardada ? ' ✓' : ''}</option>`).join('')}</select></div>
         <button class="btn" data-acc="mover" data-v="1" ${i === OPS.length - 1 ? 'disabled' : ''} aria-label="Operación siguiente">Siguiente ›</button>
       </div></div>
     <div class="operacion-texto"><span class="etq">${no === 'SI' ? 'Póliza de apertura' : 'Operación ' + no} · ${fecha(op.fecha)}</span><br>${esc(op.operacion.replace(/ver hoja /g, 'ver la tabla '))}</div>
@@ -2975,7 +2999,7 @@ window.SCG_DATA2 = {"titulo":"Caso 2 · Del plan al pago: Clínica Municipal \"S
       <tbody>${pp.filas.map((f) => `<tr class="${f.alerta ? 'alerta' : ''}"><td class="cod">${esc(f.partida)}</td><td>${esc(f.d)}</td><td class="num">${fmt(f.modificado, '–')}</td><td class="num">${fmt(f.comprometido, '–')}</td><td class="num">${fmt(f.disponible, '–')}</td><td class="num">${fmt(f.porDevengar, '–')}</td></tr>`).join('')}</tbody></table></div></div></details>`;
   }
   function capturaAutomatica(op) {
-    const p = S.polizas[op.no];
+    const p = polizasEf()[op.no];
     const rs = p ? [...p.contable, ...p.presupuestal] : [];
     return `<div class="encab"><div><div class="ruta">Inicio › Captura de pólizas</div><h2>Póliza ${numPoliza(op.no)}</h2></div>
       <div class="acciones"><button class="btn" data-acc="mover" data-v="-1">‹ Anterior</button><button class="btn" data-acc="mover" data-v="1">Siguiente ›</button></div></div>
@@ -4383,14 +4407,7 @@ ${asientos}</body></html>`;
   function publicarPresupuesto() {
     const ap = aprobEstado();
     ap.publicado = new Date().toISOString();
-    OPS.filter((o) => o.auto).forEach((o) => {
-      const ls = SOL.filter((l) => l.a === o.no);
-      S.polizas[o.no] = {
-        contable: ls.filter((l) => l.c[0] !== '8').map((l) => ({ c: l.c, cargo: l.cargo || '', abono: l.abono || '' })),
-        presupuestal: ls.filter((l) => l.c[0] === '8').map((l) => ({ c: l.c, p: l.p, cargo: l.cargo || '', abono: l.abono || '' })),
-        clasif: '', guardada: true, auto: true, ts: ap.publicado,
-      };
-    });
+    OPS.filter((o) => o.auto).forEach((o) => { delete S.polizas[o.no]; }); // la deriva polizasEf()
     S.actual = OPS_CAL()[0].no;
   }
 
