@@ -374,6 +374,11 @@ td.mal select, td.mal input, .campo.mal select, .campo.mal input { border-color:
 td.bien select, td.bien input { border-color: #5bb974; }
 .grid-pol select.partida { width: 100%; min-width: 150px; max-width: 240px; }
 
+/* ---- Portal de casos ---- */
+.portal-casos { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 12px; }
+.caso-portal .cab h3 { color: var(--marino); }
+.caso-elegido { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+
 </style>
 <header class="barra">
   <div class="escudo" aria-hidden="true">GE</div>
@@ -2426,6 +2431,7 @@ window.SCG_DATA2 = {"titulo":"Caso 2 · Del plan al pago: Clínica Municipal \"S
   ];
   function vistaActual() {
     const h = (location.hash || '').replace('#', '');
+    if (h === '' || h === 'portal') return 'portal'; // al abrir el sistema se elige el caso
     if (h === 'profesor') return 'profesor';
     if (!S.alumno) return 'inicio';
     if (MODULOS.some((m) => m[0] === h)) return h;
@@ -2440,11 +2446,15 @@ window.SCG_DATA2 = {"titulo":"Caso 2 · Del plan al pago: Clínica Municipal \"S
   function renderMarco() {
     const v = vistaActual();
     const menu = $('#menu');
-    const conMenu = v !== 'inicio' && !(v === 'profesor' && !S.alumno);
+    const conMenu = v !== 'inicio' && v !== 'portal' && !(v === 'profesor' && !S.alumno);
     menu.hidden = !conMenu;
+    // Sin enlace al panel del profesor: el profesor entra con la dirección …/#profesor y su contraseña.
     menu.innerHTML = MODULOS.map((m, i) => `<a href="#${m[0]}" ${v === m[0] ? 'aria-current="page"' : ''}><span class="n">${i + 1}</span>${m[1]}</a>`).join('')
-      + `<div class="sep"></div><a href="#profesor" ${v === 'profesor' ? 'aria-current="page"' : ''}><span class="n">P</span>Panel del profesor</a>`;
-    $('#usuario').innerHTML = S.alumno
+      + '<div class="sep"></div><a href="#portal"><span class="n">↺</span>Cambiar de caso</a>';
+    const enPortal = v === 'portal';
+    $('.barra .ente b').textContent = enPortal ? 'Sistema de Contabilidad Gubernamental – Ejercicio 2026' : ES2 ? `${EST2.ente} – Ejercicio 2026` : 'Gobierno del Estado – Ejercicio 2026';
+    $('.barra .escudo').textContent = enPortal ? 'CG' : ES2 ? 'MT' : 'GE';
+    $('#usuario').innerHTML = S.alumno && !enPortal
       ? `<span class="quien">${esc(S.alumno.nombre)} · ${esc(S.alumno.matricula)}</span><span class="chip-modo">${S.modo === 'guiada' ? 'Práctica guiada' : 'Evaluación'}${S.entregado ? ' · entregado' : ''}</span><span class="chip-modo" title="Ejercicio">${ES2 ? 'Caso 2' : 'Caso 1'} · ${esc(S.caso || 'BASE')}</span>`
       : '';
   }
@@ -2465,15 +2475,38 @@ window.SCG_DATA2 = {"titulo":"Caso 2 · Del plan al pago: Clínica Municipal \"S
     if (v === 'captura') prepararCaptura();
   }
 
+  /* ---------------- Portal: elección del caso ---------------- */
+  function avanceDe(ej) {
+    try { const s = JSON.parse(localStorage.getItem(claveEj(ej)) || 'null'); return s && s.alumno ? s : null; } catch (e) { return null; }
+  }
+  VISTAS.portal = () => {
+    const tarjeta = (ej, titulo, ente, desc, modulos) => {
+      const a = avanceDe(ej);
+      return `<div class="panel caso-portal"><div class="cab"><h3>${titulo}</h3></div><div class="cuerpo">
+        <p class="tenue" style="margin-top:0"><b>${ente}</b></p><p>${desc}</p>
+        <ul class="tenue" style="font-size:var(--t-s)">${modulos.map((m) => `<li>${m}</li>`).join('')}</ul>
+        ${a ? `<p class="aviso info" style="margin:8px 0">Avance guardado en este navegador: <b>${esc(a.alumno.nombre)}</b> · ${esc(a.alumno.matricula)}${a.caso ? ' · clave ' + esc(a.caso) : ''}</p>` : ''}
+        <div class="acciones"><button class="btn prim" data-acc="ejercicio-ir" data-v="${ej}">${a ? 'Continuar' : 'Entrar'} al ${ej === 'C1' ? 'Caso 1' : 'Caso 2'}</button></div></div></div>`;
+    };
+    return `<div class="portada">
+      <div class="ruta">Portal de casos prácticos</div>
+      <h2>Sistema de Contabilidad Gubernamental · Módulo de práctica</h2>
+      <p class="intro">Elija el caso práctico que le indicó su profesor. Cada caso guarda su avance por separado en este navegador.</p>
+      <div class="portal-casos">
+        ${tarjeta('C1', 'Caso 1 · Registro contable', 'Gobierno del Estado · ejercicio 2026', 'Registre las operaciones del año como en un sistema real y vea generarse el Libro Diario, el Mayor, la Balanza, el control presupuestal y los estados financieros.',
+          ['48 pólizas contables y presupuestales', 'Estados financieros CONAC', 'Formatos de la Ley de Disciplina Financiera'])}
+        ${tarjeta('C2', 'Caso 2 · Del plan al pago', 'Municipio de Tlaxcala · Clínica Municipal "San Tlaxcala"', 'Programe y presupueste el gasto con los clasificadores del CONAC, aplique el Acuerdo de Cabildo y registre la ejecución del primer trimestre por partida.',
+          ['Programación y presupuestación', 'Aprobación del presupuesto', 'Ejecución, control por partida y estados financieros', 'Tres entregables por módulo'])}
+      </div></div>`;
+  };
+
   /* ---------------- Inicio ---------------- */
   VISTAS.inicio = () => `
     <div class="portada">
       <div class="ruta">Acceso al sistema</div>
       <h2>Sistema de Contabilidad Gubernamental · Módulo de práctica</h2>
-      <div class="ejercicios" role="group" aria-label="Ejercicio">
-        <button type="button" class="ejercicio ${ES2 ? '' : 'act'}" data-acc="ejercicio" data-v="C1" aria-pressed="${!ES2}"><b>Caso 1 · Registro contable</b><span>Gobierno del Estado · ejercicio 2026 completo: 48 pólizas, estados financieros CONAC y formatos LDF.</span></button>
-        <button type="button" class="ejercicio ${ES2 ? 'act' : ''}" data-acc="ejercicio" data-v="C2" aria-pressed="${ES2}"><b>Caso 2 · Del plan al pago</b><span>Clínica Municipal: programación y presupuestación, aprobación del Cabildo y ejecución del primer trimestre por partida.</span></button>
-      </div>
+      <div class="aviso info caso-elegido"><span>Caso elegido: <b>${ES2 ? 'Caso 2 · Del plan al pago (Clínica Municipal)' : 'Caso 1 · Registro contable (Gobierno del Estado)'}</b></span>
+        <a class="btn chico" href="#portal">‹ Elegir otro caso</a></div>
       <p class="intro">${ES2
         ? 'Programe y presupueste el gasto de la Clínica Municipal con los clasificadores del CONAC, aplique el Acuerdo de Cabildo y publique el presupuesto aprobado. Después registre la ejecución del primer trimestre: cada póliza afecta su partida, el control presupuestal, la balanza y los estados financieros, como en un sistema real.'
         : 'Registre las operaciones del ejercicio 2026 del Gobierno del Estado como lo haría en un sistema real: capture pólizas contables y presupuestales con el Plan de Cuentas del CONAC y vea generarse en tiempo real el Libro Diario, el Mayor, la Balanza, el control presupuestal y los estados financieros.'}</p>
@@ -2499,8 +2532,7 @@ window.SCG_DATA2 = {"titulo":"Caso 2 · Del plan al pago: Clínica Municipal \"S
           </div>
         </div>
       </form>
-      <p class="tenue">Su avance se guarda en este navegador${ES2 ? ', por separado para cada caso' : ''}. Para continuar en otro equipo, use <b>Exportar avance</b> en Resultados e impórtelo aquí.
-      Profesores: <a href="#profesor">Panel del profesor</a>.</p>
+      <p class="tenue">Su avance se guarda en este navegador${ES2 ? ', por separado para cada caso' : ''}. Para continuar en otro equipo, use <b>Exportar avance</b> en Resultados e impórtelo aquí.</p>
     </div>`;
 
   /* ---------------- Tablero ---------------- */
@@ -3704,7 +3736,19 @@ ${ver ? `<h2>Detalle por asiento</h2><table><tr><th>Póliza</th><th>Estado</th><
   }
 
   /* ---------------- Panel del profesor ---------------- */
-  const HUELLA_PROFESOR = '7085bb12'; // huella de la clave del profesor
+  // Huella de la clave del profesor (se compara sin distinguir mayúsculas ni espacios al inicio o al final).
+  const HUELLA_PROFESOR = '588e30f2';
+  const claveProfesorOk = (v) => huella(String(v || '').trim().toUpperCase()) === HUELLA_PROFESOR;
+  const PROF_SESION = 'scg-edu-profesor';
+  function profAbierto() {
+    try { return sessionStorage.getItem(PROF_SESION) === HUELLA_PROFESOR || !!UI.profAbierto; } catch (e) { return !!UI.profAbierto; }
+  }
+  function abrirPanelProfesor(v) {
+    if (!claveProfesorOk(v)) { UI.profError = true; render(); toast('Contraseña del profesor incorrecta.'); return; }
+    UI.profAbierto = true; UI.profError = false;
+    try { sessionStorage.setItem(PROF_SESION, HUELLA_PROFESOR); } catch (e) { /* sin almacenamiento */ }
+    render();
+  }
   function disenadorHtml() {
     const d = UI.dis;
     let cuerpo = '';
@@ -3732,8 +3776,7 @@ ${ver ? `<h2>Detalle por asiento</h2><table><tr><th>Póliza</th><th>Estado</th><
           </tbody></table></div></div></details>
         <details class="panel"><summary class="cab" style="cursor:pointer"><h3>Enunciado del caso con estas cifras</h3></summary><div class="cuerpo">
           <ol class="enunciado">${v.operaciones.operaciones.map((o) => `<li value="${o.no === 'SI' ? 0 : o.no}"><b>${o.no === 'SI' ? 'Apertura' : 'Op. ' + o.no}:</b> ${esc(o.operacion)}</li>`).join('')}</ol></div></details>
-        <div class="filtros"><div class="campo"><label for="dis-clave">Clave del profesor</label><input id="dis-clave" type="password" autocomplete="off" value="${esc(d.clave || '')}"></div>
-          <button class="btn" data-acc="dis-solucion">Descargar solución del caso (.html)</button></div>`;
+        <div class="acciones"><button class="btn" data-acc="dis-solucion">Descargar solución del caso (.html)</button></div>`;
     }
     return `<div class="panel"><div class="cab"><h3>Casos por grupo</h3></div><div class="cuerpo">
       <p>Escriba una clave para cada grupo (por ejemplo <span class="cod">CG-5A-2026</span>). La clave genera cifras distintas, siempre las mismas para esa clave:
@@ -3759,10 +3802,18 @@ ${asientos}</body></html>`;
   }
 
   VISTAS.profesor = () => {
+    if (!profAbierto()) {
+      return `<div class="portada"><div class="ruta">Acceso restringido</div><h2>Panel del profesor</h2>
+        <form class="panel" id="form-prof" autocomplete="off" style="max-width:460px"><div class="cuerpo">
+          <div class="campo"><label for="prof-clave">Contraseña del profesor</label><input id="prof-clave" type="password" autocomplete="off" autofocus></div>
+          ${UI.profError ? '<div class="aviso err">Contraseña incorrecta.</div>' : ''}
+          <div class="acciones"><button class="btn prim" type="submit">Entrar al panel</button><a class="btn" href="#portal">‹ Volver al portal</a></div>
+        </div></form></div>`;
+    }
     const filas = UI.profesor;
     return `
     <div class="encab"><div><div class="ruta">Panel del profesor</div><h2>Panel del profesor</h2></div>
-      ${!S.alumno ? '<a class="btn" href="#inicio">‹ Volver al acceso</a>' : ''}</div>
+      <div class="acciones"><a class="btn" href="#portal">‹ Portal</a><button class="btn" data-acc="prof-salir">Cerrar panel</button></div></div>
     <div class="aviso info">Está en el panel del <b>${ES2 ? 'Caso 2 · Del plan al pago' : 'Caso 1 · Registro contable'}</b>. Cada caso tiene su propio generador de casos por grupo.
       <button class="btn chico" data-acc="ejercicio" data-v="${ES2 ? 'C1' : 'C2'}">Ir al panel del ${ES2 ? 'Caso 1' : 'Caso 2'}</button></div>
     ${ES2 ? disenadorC2Html() : disenadorHtml()}
@@ -4111,8 +4162,7 @@ h2{color:#1F4E78;font-size:16px;margin-top:24px}h3{font-size:13px;margin:16px 0 
           <ol class="enunciado">${c.necesidades.map((n) => `<li value="${n.id}"><b>${esc(n.necesidad)}</b> (${esc(n.cantidad)}): ${esc(n.base)}${Caso2.ajusteDe(c, n.id) ? ` <i>Reducción del Cabildo: ${fmtTxt(Caso2.ajusteDe(c, n.id))}.</i>` : ''}</li>`).join('')}</ol></div></details>
         <details class="panel"><summary class="cab" style="cursor:pointer"><h3>Operaciones del trimestre con estas cifras</h3></summary><div class="cuerpo">
           <ol class="enunciado">${c.operaciones.map((o) => `<li value="${o.no}">${esc(o.operacion)}</li>`).join('')}</ol></div></details>
-        <div class="filtros"><div class="campo"><label for="dis-clave">Clave del profesor</label><input id="dis-clave" type="password" autocomplete="off" value="${esc(d.clave || '')}"></div>
-          <button class="btn" data-acc="sol-c2">Descargar solución del caso (.html)</button></div>`;
+        <div class="acciones"><button class="btn" data-acc="sol-c2">Descargar solución del caso (.html)</button></div>`;
     }
     return `<div class="panel"><div class="cab"><h3>Casos por grupo · Caso 2</h3></div><div class="cuerpo">
       <p>Escriba una clave para cada grupo (por ejemplo <span class="cod">CL-5A-2026</span>). La clave genera cifras distintas, siempre las mismas para esa clave:
@@ -4205,8 +4255,7 @@ h2{color:#1F4E78;font-size:16px;margin-top:24px}h3{font-size:13px;margin:16px 0 
       if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok, () => toast('Seleccione la clave y cópiela con Ctrl+C.')); else toast('Seleccione la clave y cópiela con Ctrl+C.');
     },
     'dis-solucion': () => {
-      UI.dis.clave = $('#dis-clave').value;
-      if (huella(UI.dis.clave) !== HUELLA_PROFESOR) { toast('Clave del profesor incorrecta.'); return; }
+      if (!profAbierto()) { ir('profesor'); return; }
       guardarArchivo(`Solucion_caso_${(UI.dis.codigo || 'BASE').replace(/[^\w-]/g, '_')}.html`, solucionCasoHtml(UI.dis.codigo, UI.dis.f), 'text/html');
     },
     'descargar-entrega': () => guardarArchivo(nombreArchivo('json'), JSON.stringify(datosEntrega(), null, 1)),
@@ -4233,15 +4282,16 @@ h2{color:#1F4E78;font-size:16px;margin-top:24px}h3{font-size:13px;margin:16px 0 
       else { ta.select(); toast('Seleccionado: presione Ctrl+C.'); }
     },
     'glosario': () => abrirGlosario(),
-    'ejercicio': (el) => cambiarEjercicio(el.dataset.v, vistaActual() === 'profesor' ? 'profesor' : (S.alumno ? '' : 'inicio')),
+    'ejercicio': (el) => cambiarEjercicio(el.dataset.v, vistaActual() === 'profesor' ? 'profesor' : 'entrar'),
+    'prof-salir': () => { UI.profAbierto = false; try { sessionStorage.removeItem(PROF_SESION); } catch (e) { /* nada */ } ir('portal'); },
+    'ejercicio-ir': (el) => cambiarEjercicio(el.dataset.v, 'entrar'),
     'verificar-prog': () => { progEstado().verificado = true; persistir(true); render(); toast(`Programación y presupuestación: ${califProg().resumen.programacion.correctos + califProg().resumen.presupuestacion.correctos} campos correctos.`); },
     'turnar': () => { UI.confirmar = 'turnar'; render(); },
     'turnar-ok': () => { progEstado().turnado = new Date().toISOString(); progEstado().verificado = true; UI.confirmar = null; persistir(true); ir('aprobacion'); toast('Proyecto turnado al Cabildo. Aplique el Acuerdo de Cabildo.'); },
     'publicar': () => { UI.confirmar = 'publicar'; render(); },
     'publicar-ok': () => { publicarPresupuesto(); UI.confirmar = null; persistir(true); render(); toast('Presupuesto aprobado publicado y póliza registrada. Ya puede registrar la ejecución.'); },
     'sol-c2': () => {
-      UI.dis2.clave = $('#dis-clave').value;
-      if (huella(UI.dis2.clave) !== HUELLA_PROFESOR) { toast('Clave del profesor incorrecta.'); return; }
+      if (!profAbierto()) { ir('profesor'); return; }
       guardarArchivo(`Solucion_Caso2_${(UI.dis2.codigo || 'BASE').replace(/[^\w-]/g, '_')}.html`, solucionC2Html(UI.dis2.codigo), 'text/html');
     },
     'dis2-generar': () => { const c = $('#dis-codigo').value; UI.dis2 = { codigo: Caso2.esBase(c) ? '' : Caso2.normal(c), ver: true }; render(); },
@@ -4257,6 +4307,7 @@ h2{color:#1F4E78;font-size:16px;margin-top:24px}h3{font-size:13px;margin:16px 0 
   });
 
   document.addEventListener('submit', (e) => {
+    if (e.target.id === 'form-prof') { e.preventDefault(); abrirPanelProfesor($('#prof-clave').value); return; }
     if (e.target.id !== 'form-inicio') return;
     e.preventDefault();
     const nombre = $('#i-nombre').value.trim(), matricula = $('#i-matricula').value.trim();
@@ -4308,7 +4359,6 @@ h2{color:#1F4E78;font-size:16px;margin-top:24px}h3{font-size:13px;margin:16px 0 
       const v = Math.max(50, Math.min(300, Math.round(Number(t.value) || 100)));
       UI.dis.f = Object.assign({}, UI.dis.f, { [t.dataset.k]: v / 100 });
       UI.dis.codigo = Casos.codigoManual(UI.dis.f);
-      UI.dis.clave = $('#dis-clave') ? $('#dis-clave').value : '';
       render();
     } else if (t.id === 'bz-niv') {
       UI.bzNivel = Number(t.value); render();
@@ -4458,11 +4508,7 @@ h2{color:#1F4E78;font-size:16px;margin-top:24px}h3{font-size:13px;margin:16px 0 
   }
 
   /* ---------------- arranque ---------------- */
-  if (ES2) {
-    $('.barra .ente b').textContent = `${D2.ente} – Ejercicio 2026`;
-    $('.barra .escudo').textContent = 'MT';
-    document.title = 'SCG-Edu Caso 2 · Clínica Municipal';
-  }
+  if (ES2) document.title = 'SCG-Edu Caso 2 · Clínica Municipal';
   $('#glosario').innerHTML = glosarioHtml();
   $('#btn-glosario').addEventListener('click', abrirGlosario);
   $('#glosario').addEventListener('click', (e) => { if (e.target.id === 'cerrar-glosario') cerrarGlosario(); });
