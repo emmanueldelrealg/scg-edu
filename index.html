@@ -322,6 +322,37 @@ textarea.json { width: 100%; min-height: 160px; font-family: var(--f-num); font-
   body { background: #fff; }
 }
 
+/* ---------- Estados financieros CONAC ---------- */
+.ef-menu { display: flex; flex-direction: column; gap: 8px; background: var(--papel); border: 1px solid var(--linea); border-radius: 4px; padding: 10px 14px; }
+.ef-menu > div { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.ef-menu .etq { min-width: 8.5em; }
+.ef-doc { background: var(--papel); border: 1px solid var(--linea); border-radius: 4px; padding: 20px clamp(12px, 3vw, 28px); display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.ef-enc { text-align: center; display: flex; flex-direction: column; gap: 2px; border-bottom: 3px solid var(--marino); padding-bottom: 10px; }
+.ef-enc b { font-size: var(--t-m); text-transform: uppercase; letter-spacing: 0.04em; color: var(--marino); }
+.ef-enc .ef-nom { font-size: var(--t-l); font-weight: 700; }
+.ef-enc span { font-size: var(--t-s); }
+.ef-sub { margin: 6px 0 0; color: var(--marino); font-size: var(--t-m); }
+table.conac { border-collapse: collapse; width: 100%; font-size: var(--t-s); }
+table.conac.ancha { min-width: 760px; }
+table.conac th { background: var(--marino); color: #fff; font-weight: 600; font-size: var(--t-xs); text-transform: uppercase; letter-spacing: 0.03em; padding: 7px 8px; text-align: left; vertical-align: bottom; }
+table.conac th.num { text-align: right; }
+table.conac td { padding: 4px 8px; border-bottom: 1px dotted var(--linea); vertical-align: top; }
+table.conac td.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+table.conac tr.sec td { font-weight: 700; color: var(--marino); padding-top: 12px; border-bottom: 0; text-transform: uppercase; font-size: var(--t-xs); letter-spacing: 0.05em; }
+table.conac tr.grp td { font-weight: 700; }
+table.conac tr.item td:first-child { padding-left: 22px; }
+table.conac tr.sub td { font-weight: 700; border-top: 1px solid var(--tinta); border-bottom: 1px solid var(--tinta); background: #f4f7fa; }
+table.conac tr.tot td { font-weight: 700; border-top: 2px solid var(--tinta); border-bottom: 3px double var(--tinta); background: #eef3f8; }
+.esf { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; align-items: start; }
+.protesta { font-size: var(--t-xs); color: var(--tenue); font-style: italic; }
+.firmas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; font-size: var(--t-xs); text-align: center; color: var(--tenue); padding-top: 8px; }
+.firmas span { display: block; border-bottom: 1px solid var(--tinta); min-height: 1.6em; margin-bottom: 4px; color: var(--tinta); font-size: var(--t-s); }
+.ef-nota { font-size: var(--t-s); background: var(--marino-claro); color: var(--marino); border-radius: 3px; padding: 8px 12px; }
+@media print { .ef-doc { border: 0; padding: 0; } .ef-doc + .ef-doc { page-break-before: always; } }
+table.conac th.num { font-family: var(--f-ui); white-space: normal; min-width: 7.5em; }
+table.conac.ancha td:first-child { min-width: 15em; }
+table.conac td:first-child { min-width: 12em; }
+
 </style>
 <header class="barra">
   <div class="escudo" aria-hidden="true">GE</div>
@@ -623,6 +654,373 @@ window.SCG_DATA = {"catalogo":[{"c":"100000000000","d":"ACTIVO","det":false,"nat
     return avisos;
   }
 
+  /* ===================== Estados financieros CONAC =====================
+     Formatos del Capítulo VII del Manual de Contabilidad Gubernamental
+     (reformas DOF 23-12-2020 a 10-12-2025) y de la Conciliación (DOF 06-12-2022).
+     "SR x.y.z" = saldo del rubro en la balanza; aquí se suma el prefijo de cuenta. */
+
+  const L = (id, d, sr) => ({ id, d, sr });
+  const CONAC = {
+    actividades: {
+      ingresos: [
+        { id: 'IA', d: 'Ingresos de Gestión', filas: [L('a', 'Impuestos', '411'), L('b', 'Cuotas y Aportaciones de Seguridad Social', '412'), L('c', 'Contribuciones de Mejoras', '413'), L('d', 'Derechos', '414'), L('e', 'Productos', '415'), L('f', 'Aprovechamientos', '416'), L('g', 'Ingresos por Venta de Bienes y Prestación de Servicios', '417')] },
+        { id: 'IB', d: 'Participaciones, Aportaciones, Convenios, Incentivos Derivados de la Colaboración Fiscal, Fondos Distintos de Aportaciones, Transferencias, Asignaciones, Subsidios y Subvenciones, y Pensiones y Jubilaciones', filas: [L('a', 'Participaciones, Aportaciones, Convenios, Incentivos Derivados de la Colaboración Fiscal y Fondos Distintos de Aportaciones', '421'), L('b', 'Transferencias, Asignaciones, Subsidios y Subvenciones, y Pensiones y Jubilaciones', '422')] },
+        { id: 'IC', d: 'Otros Ingresos y Beneficios', filas: [L('a', 'Ingresos Financieros', '431'), L('b', 'Incremento por Variación de Inventarios', '432'), L('c', 'Disminución del Exceso de Estimaciones por Pérdida o Deterioro u Obsolescencia', '433'), L('d', 'Disminución del Exceso de Provisiones', '434'), L('e', 'Otros Ingresos y Beneficios Varios', '439')] },
+      ],
+      gastos: [
+        { id: 'IIA', d: 'Gastos de Funcionamiento', filas: [L('a', 'Servicios Personales', '511'), L('b', 'Materiales y Suministros', '512'), L('c', 'Servicios Generales', '513')] },
+        { id: 'IIB', d: 'Transferencias, Asignaciones, Subsidios y Otras Ayudas', filas: [L('a', 'Transferencias Internas y Asignaciones al Sector Público', '521'), L('b', 'Transferencias al Resto del Sector Público', '522'), L('c', 'Subsidios y Subvenciones', '523'), L('d', 'Ayudas Sociales', '524'), L('e', 'Pensiones y Jubilaciones', '525'), L('f', 'Transferencias a Fideicomisos, Mandatos y Contratos Análogos', '526'), L('g', 'Transferencias a la Seguridad Social', '527'), L('h', 'Donativos', '528'), L('i', 'Transferencias al Exterior', '529')] },
+        { id: 'IIC', d: 'Participaciones y Aportaciones', filas: [L('a', 'Participaciones', '531'), L('b', 'Aportaciones', '532'), L('c', 'Convenios', '533')] },
+        { id: 'IID', d: 'Intereses, Comisiones y Otros Gastos de la Deuda Pública', filas: [L('a', 'Intereses de la Deuda Pública', '541'), L('b', 'Comisiones de la Deuda Pública', '542'), L('c', 'Gastos de la Deuda Pública', '543'), L('d', 'Costo por Coberturas', '544'), L('e', 'Apoyos Financieros', '545')] },
+        { id: 'IIE', d: 'Otros Gastos y Pérdidas Extraordinarias', filas: [L('a', 'Estimaciones, Depreciaciones, Deterioros, Obsolescencia y Amortizaciones', '551'), L('b', 'Provisiones', '552'), L('c', 'Disminución de Inventarios', '553'), L('d', 'Otros Gastos', '559')] },
+        { id: 'IIF', d: 'Inversión Pública', filas: [L('a', 'Inversión Pública no Capitalizable', '561')] },
+      ],
+    },
+    activo: [
+      { id: 'IA', d: 'Activo Circulante', filas: [L('a', 'Efectivo y Equivalentes', '111'), L('b', 'Derechos a Recibir Efectivo o Equivalentes', '112'), L('c', 'Derechos a Recibir Bienes o Servicios', '113'), L('d', 'Inventarios', '114'), L('e', 'Almacenes', '115'), L('f', 'Estimación por Pérdida o Deterioro de Activos Circulantes', '116'), L('g', 'Otros Activos Circulantes', '119')] },
+      { id: 'IB', d: 'Activo No Circulante', filas: [L('a', 'Inversiones Financieras a Largo Plazo', '121'), L('b', 'Derechos a Recibir Efectivo o Equivalentes a Largo Plazo', '122'), L('c', 'Bienes Inmuebles, Infraestructura y Construcciones en Proceso', '123'), L('d', 'Bienes Muebles', '124'), L('e', 'Activos Intangibles', '125'), L('f', 'Depreciación, Deterioro y Amortización Acumulada de Bienes', '126'), L('g', 'Activos Diferidos', '127'), L('h', 'Estimación por Pérdida o Deterioro de Activos no Circulantes', '128'), L('i', 'Otros Activos no Circulantes', '129')] },
+    ],
+    pasivo: [
+      { id: 'IIA', d: 'Pasivo Circulante', filas: [L('a', 'Cuentas por Pagar a Corto Plazo', '211'), L('b', 'Documentos por Pagar a Corto Plazo', '212'), L('c', 'Porción a Corto Plazo de la Deuda Pública a Largo Plazo', '213'), L('d', 'Títulos y Valores a Corto Plazo', '214'), L('e', 'Pasivos Diferidos a Corto Plazo', '215'), L('f', 'Fondos y Bienes de Terceros en Garantía y/o Administración a Corto Plazo', '216'), L('g', 'Provisiones a Corto Plazo', '217'), L('h', 'Otros Pasivos a Corto Plazo', '219')] },
+      { id: 'IIB', d: 'Pasivo No Circulante', filas: [L('a', 'Cuentas por Pagar a Largo Plazo', '221'), L('b', 'Documentos por Pagar a Largo Plazo', '222'), L('c', 'Deuda Pública a Largo Plazo', '223'), L('d', 'Pasivos Diferidos a Largo Plazo', '224'), L('e', 'Fondos y Bienes de Terceros en Garantía y/o Administración a Largo Plazo', '225'), L('f', 'Provisiones a Largo Plazo', '226')] },
+    ],
+    hacienda: [
+      { id: 'IIIA', d: 'Hacienda Pública/Patrimonio Contribuido', filas: [L('a', 'Aportaciones', '311'), L('b', 'Donaciones de Capital', '312'), L('c', 'Actualización de la Hacienda Pública/Patrimonio', '313')] },
+      { id: 'IIIB', d: 'Hacienda Pública/Patrimonio Generado', filas: [L('a', 'Resultado del Ejercicio (Ahorro/Desahorro)', '321'), L('b', 'Resultados de Ejercicios Anteriores', '322'), L('c', 'Revalúos', '323'), L('d', 'Reservas', '324'), L('e', 'Rectificaciones de Resultados de Ejercicios Anteriores', '325')] },
+      { id: 'IIIC', d: 'Exceso o Insuficiencia en la Actualización de la Hacienda Pública/Patrimonio', filas: [L('a', 'Resultado por Posición Monetaria', '331'), L('b', 'Resultado por Tenencia de Activos no Monetarios', '332')] },
+    ],
+    flujos: {
+      opOrigen: [['a', 'Impuestos'], ['b', 'Cuotas y Aportaciones de Seguridad Social'], ['c', 'Contribuciones de Mejoras'], ['d', 'Derechos'], ['e', 'Productos'], ['f', 'Aprovechamientos'], ['g', 'Ingresos por Venta de Bienes y Prestación de Servicios'], ['h', 'Participaciones, Aportaciones, Convenios, Incentivos Derivados de la Colaboración Fiscal y Fondos Distintos de Aportaciones'], ['i', 'Transferencias, Asignaciones, Subsidios y Subvenciones, y Pensiones y Jubilaciones'], ['j', 'Otros Orígenes de Operación']],
+      opAplic: [['a', 'Servicios Personales'], ['b', 'Materiales y Suministros'], ['c', 'Servicios Generales'], ['d', 'Transferencias Internas y Asignaciones al Sector Público'], ['e', 'Transferencias al Resto del Sector Público'], ['f', 'Subsidios y Subvenciones'], ['g', 'Ayudas Sociales'], ['h', 'Pensiones y Jubilaciones'], ['i', 'Transferencias a Fideicomisos, Mandatos y Contratos Análogos'], ['j', 'Transferencias a la Seguridad Social'], ['k', 'Donativos'], ['l', 'Transferencias al Exterior'], ['m', 'Participaciones'], ['n', 'Aportaciones'], ['ñ', 'Convenios'], ['o', 'Otras Aplicaciones de Operación']],
+      invOrigen: [['a', 'Bienes Inmuebles, Infraestructura y Construcciones en Proceso'], ['b', 'Bienes Muebles'], ['c', 'Otros Orígenes de Inversión']],
+      invAplic: [['a', 'Bienes Inmuebles, Infraestructura y Construcciones en Proceso'], ['b', 'Bienes Muebles'], ['c', 'Otras Aplicaciones de Inversión']],
+      finOrigen: [['a1', 'Endeudamiento Neto · Interno'], ['a2', 'Endeudamiento Neto · Externo'], ['b', 'Otros Orígenes de Financiamiento']],
+      finAplic: [['a1', 'Servicios de la Deuda · Interno'], ['a2', 'Servicios de la Deuda · Externo'], ['b', 'Otras Aplicaciones de Financiamiento']],
+    },
+    concIngresos: {
+      mas: [['2.1', 'Ingresos Financieros'], ['2.2', 'Incremento por Variación de Inventarios'], ['2.3', 'Disminución del Exceso de Estimaciones por Pérdida o Deterioro u Obsolescencia'], ['2.4', 'Disminución del Exceso de Provisiones'], ['2.5', 'Otros Ingresos y Beneficios Varios'], ['2.6', 'Otros Ingresos Contables No Presupuestarios']],
+      menos: [['3.1', 'Aprovechamientos Patrimoniales'], ['3.2', 'Ingresos Derivados de Financiamientos'], ['3.3', 'Otros Ingresos Presupuestarios No Contables']],
+    },
+    concEgresos: {
+      menos: [['2.1', 'Materias Primas y Materiales de Producción y Comercialización'], ['2.2', 'Materiales y Suministros'], ['2.3', 'Mobiliario y Equipo de Administración'], ['2.4', 'Mobiliario y Equipo Educacional y Recreativo'], ['2.5', 'Equipo e Instrumental Médico y de Laboratorio'], ['2.6', 'Vehículos y Equipo de Transporte'], ['2.7', 'Equipo de Defensa y Seguridad'], ['2.8', 'Maquinaria, Otros Equipos y Herramientas'], ['2.9', 'Activos Biológicos'], ['2.10', 'Bienes Inmuebles'], ['2.11', 'Activos Intangibles'], ['2.12', 'Obra Pública en Bienes de Dominio Público'], ['2.13', 'Obra Pública en Bienes Propios'], ['2.14', 'Acciones y Participaciones de Capital'], ['2.15', 'Compra de Títulos y Valores'], ['2.16', 'Concesión de Préstamos'], ['2.17', 'Inversiones en Fideicomisos, Mandatos y Otros Análogos'], ['2.18', 'Provisiones para Contingencias y Otras Erogaciones Especiales'], ['2.19', 'Amortización de la Deuda Pública'], ['2.20', 'Adeudos de Ejercicios Fiscales Anteriores (ADEFAS)'], ['2.21', 'Otros Egresos Presupuestarios No Contables']],
+      mas: [['3.1', 'Estimaciones, Depreciaciones, Deterioros, Obsolescencia y Amortizaciones'], ['3.2', 'Provisiones'], ['3.3', 'Disminución de Inventarios'], ['3.4', 'Otros Gastos'], ['3.5', 'Inversión Pública no Capitalizable'], ['3.6', 'Materiales y Suministros (consumos)'], ['3.7', 'Otros Gastos Contables No Presupuestarios']],
+    },
+    // Clasificación económica a nivel capítulo (el caso aprueba el presupuesto por capítulo).
+    tipoGasto: { 1000: 1, 2000: 1, 3000: 1, 4000: 1, 5000: 2, 6000: 2, 7000: 2, 8000: 5, 9000: 3 },
+  };
+
+  /* Asigna una cuenta a un concepto según el prefijo más largo que coincida. */
+  const porPrefijo = (c, mapa) => {
+    let mejor = null;
+    Object.keys(mapa).forEach((p) => { if (c.startsWith(p) && (!mejor || p.length > mejor.length)) mejor = p; });
+    return mejor ? mapa[mejor] : null;
+  };
+
+  function estadosConac(lineas, catalogo, ppto) {
+    const bz = balanza(lineas, catalogo);
+    const cp = presupuesto(lineas, ppto);
+    const det = bz.filas.filter((f) => f.det);
+    const sumaPre = (pre, k) => r2(det.filter((f) => f.c.startsWith(pre)).reduce((t, f) => t + f[k], 0));
+    const fin = (pre) => sumaPre(pre, 'saldo');   // saldo final con signo (deudor +)
+    const ini = (pre) => sumaPre(pre, 'si');      // saldo inicial (póliza de apertura)
+    const sumar = (xs, k) => r2(xs.reduce((t, x) => t + x[k], 0));
+
+    // ---- A) Estado de Actividades (ingresos acreedores en positivo)
+    const grupos = (defs, signo) => defs.map((g) => {
+      const filas = g.filas.map((f) => ({ ...f, v: r2(signo * fin(f.sr)), ant: null }));
+      return { id: g.id, d: g.d, filas, v: sumar(filas, 'v') };
+    });
+    const ingresos = grupos(CONAC.actividades.ingresos, -1);
+    const gastos = grupos(CONAC.actividades.gastos, 1);
+    const totIngresos = sumar(ingresos, 'v');
+    const totGastos = sumar(gastos, 'v');
+    const resultado = r2(totIngresos - totGastos);
+    const actividades = { ingresos, gastos, totIngresos, totGastos, resultado };
+
+    // ---- B) Estado de Situación Financiera (20XN = saldo final, 20XN-1 = apertura)
+    const res321ini = r2(-ini('321'));
+    const res321 = r2(-fin('321') + resultado); // sin asiento de cierre, el resultado se toma del Estado de Actividades
+    const bloque = (defs, signo) => defs.map((g) => {
+      const filas = g.filas.map((f) => {
+        if (f.sr === '321') return { ...f, v: res321, ant: res321ini };
+        return { ...f, v: r2(signo * fin(f.sr)), ant: r2(signo * ini(f.sr)) };
+      });
+      return { id: g.id, d: g.d, filas, v: sumar(filas, 'v'), ant: sumar(filas, 'ant') };
+    });
+    const activo = bloque(CONAC.activo, 1);
+    const pasivo = bloque(CONAC.pasivo, -1);
+    const hacienda = bloque(CONAC.hacienda, -1);
+    const tot = (bs) => ({ v: sumar(bs, 'v'), ant: sumar(bs, 'ant') });
+    const tA = tot(activo), tP = tot(pasivo), tH = tot(hacienda);
+    const situacion = { activo, pasivo, hacienda, totActivo: tA, totPasivo: tP, totHacienda: tH,
+      totPH: { v: r2(tP.v + tH.v), ant: r2(tP.ant + tH.ant) } };
+
+    // ---- C) Estado de Variación en la Hacienda Pública
+    const h = (sr) => ({ ini: r2(-ini(sr)), fin: r2(-fin(sr)) });
+    const vh = {
+      ia: ['311', '312', '313'].map((sr, i) => ({ id: 'abc'[i], d: CONAC.hacienda[0].filas[i].d, contrib: h(sr).ini })),
+      ib: [
+        { id: 'a', d: 'Resultado del Ejercicio (Ahorro/Desahorro)', delEj: res321ini },
+        ...['322', '323', '324', '325'].map((sr, i) => ({ id: 'bcde'[i], d: CONAC.hacienda[1].filas[i + 1].d, anteriores: h(sr).ini })),
+      ],
+      ic: ['331', '332'].map((sr, i) => ({ id: 'ab'[i], d: CONAC.hacienda[2].filas[i].d, exceso: h(sr).ini })),
+      iia: ['311', '312', '313'].map((sr, i) => ({ id: 'abc'[i], d: CONAC.hacienda[0].filas[i].d, contrib: r2(h(sr).fin - h(sr).ini) })),
+      iib: [
+        { id: 'a', d: 'Resultado del Ejercicio (Ahorro/Desahorro)', delEj: res321 },
+        { id: 'b', d: 'Resultados de Ejercicios Anteriores', anteriores: r2(h('322').fin - h('322').ini), delEj: r2(-res321ini) },
+        ...['323', '324', '325'].map((sr, i) => ({ id: 'cde'[i], d: CONAC.hacienda[1].filas[i + 2].d, delEj: r2(h(sr).fin - h(sr).ini) })),
+      ],
+      iic: ['331', '332'].map((sr, i) => ({ id: 'ab'[i], d: CONAC.hacienda[2].filas[i].d, exceso: r2(h(sr).fin - h(sr).ini) })),
+    };
+    const col = (xs, k) => r2(xs.reduce((t, x) => t + (x[k] || 0), 0));
+    ['ia', 'ib', 'ic', 'iia', 'iib', 'iic'].forEach((k) => {
+      vh[k + 'Tot'] = { contrib: col(vh[k], 'contrib'), anteriores: col(vh[k], 'anteriores'), delEj: col(vh[k], 'delEj'), exceso: col(vh[k], 'exceso') };
+    });
+    const sumaCols = (a, b) => ({ contrib: r2(a.contrib + (b ? b.contrib : 0)), anteriores: r2(a.anteriores + (b ? b.anteriores : 0)), delEj: r2(a.delEj + (b ? b.delEj : 0)), exceso: r2(a.exceso + (b ? b.exceso : 0)) });
+    const total4 = (x) => r2(x.contrib + x.anteriores + x.delEj + x.exceso);
+    vh.final1 = sumaCols(sumaCols(vh.iaTot, vh.ibTot), vh.icTot);
+    vh.final2 = sumaCols(vh.final1, sumaCols(sumaCols(vh.iiaTot, vh.iibTot), vh.iicTot));
+    vh.total4 = total4;
+
+    // ---- D) Estado de Cambios en la Situación Financiera
+    const cambio = (bs, signoOrigen) => bs.map((g) => {
+      const filas = g.filas.map((f) => {
+        const d = r2(f.v - f.ant);            // variación con el signo del bloque
+        const origen = signoOrigen * d > 0 ? Math.abs(d) : 0;
+        const aplicacion = signoOrigen * d < 0 ? Math.abs(d) : 0;
+        return { id: f.id, d: f.d, origen, aplicacion };
+      });
+      return { id: g.id, d: g.d, filas, origen: sumar(filas, 'origen'), aplicacion: sumar(filas, 'aplicacion') };
+    });
+    const cambios = { activo: cambio(activo, -1), pasivo: cambio(pasivo, 1), hacienda: cambio(hacienda, 1) };
+    ['activo', 'pasivo', 'hacienda'].forEach((k) => {
+      cambios[k + 'Tot'] = { origen: sumar(cambios[k], 'origen'), aplicacion: sumar(cambios[k], 'aplicacion') };
+    });
+    cambios.origen = r2(cambios.activoTot.origen + cambios.pasivoTot.origen + cambios.haciendaTot.origen);
+    cambios.aplicacion = r2(cambios.activoTot.aplicacion + cambios.pasivoTot.aplicacion + cambios.haciendaTot.aplicacion);
+
+    // ---- Agrupación por póliza (flujos y conciliaciones)
+    const polizas = new Map();
+    lineas.forEach((l) => {
+      if (l.t === 'Apertura') return;
+      if (!polizas.has(l.a)) polizas.set(l.a, { cont: [], pres: [], clasif: '' });
+      const p = polizas.get(l.a);
+      if (l.t === 'Presupuestal') { p.pres.push(l); if (l.clasif) p.clasif = l.clasif; } else p.cont.push(l);
+    });
+
+    // ---- E) Estado de Flujos de Efectivo (método directo sobre los movimientos de efectivo)
+    const F = {};
+    Object.entries(CONAC.flujos).forEach(([k, xs]) => { F[k] = Object.fromEntries(xs.map(([id]) => [id, 0])); });
+    const sumar1 = (k, id, v) => { F[k][id] = r2(F[k][id] + v); };
+    const ING = { 411: 'a', 412: 'b', 413: 'c', 414: 'd', 415: 'e', 416: 'f', 417: 'g', 421: 'h', 422: 'i' };
+    const GAS = { 511: 'a', 512: 'b', 513: 'c', 521: 'd', 522: 'e', 523: 'f', 524: 'g', 525: 'h', 526: 'i', 527: 'j', 528: 'k', 529: 'l', 531: 'm', 532: 'n', 533: 'ñ' };
+    const CAP = { 1000: ['opAplic', 'a'], 2000: ['opAplic', 'b'], 3000: ['opAplic', 'c'], 4000: ['opAplic', 'o'], 5000: ['invAplic', 'b'], 6000: ['invAplic', 'a'], 7000: ['invAplic', 'c'], 8000: ['opAplic', 'm'], 9000: ['finAplic', 'a1'] };
+    const detalleFlujos = [];
+    polizas.forEach((p, a) => {
+      const efectivo = r2(p.cont.filter((l) => l.c.startsWith('111')).reduce((t, l) => t + l.cargo - l.abono, 0));
+      if (!efectivo) return;
+      const otras = p.cont.filter((l) => !l.c.startsWith('111'));
+      let destino;
+      if (efectivo > 0) {
+        const abonos = otras.filter((l) => l.abono);
+        const ingresosP = abonos.filter((l) => l.c[0] === '4');
+        if (abonos.some((l) => l.c.startsWith('12'))) {
+          destino = ['invOrigen', abonos.some((l) => l.c.startsWith('123')) ? 'a' : abonos.some((l) => l.c.startsWith('124')) ? 'b' : 'c'];
+        } else if (ingresosP.length) {
+          const totalIng = ingresosP.reduce((t, l) => t + l.abono, 0);
+          ingresosP.forEach((l) => sumar1('opOrigen', ING[l.c.slice(0, 3)] || 'j', r2(efectivo * l.abono / totalIng)));
+          detalleFlujos.push({ a, v: efectivo, k: 'opOrigen' });
+          return;
+        } else if (abonos.some((l) => /^(2131|2133|223)/.test(l.c))) destino = ['finOrigen', 'a1'];
+        else if (abonos.some((l) => l.c.startsWith('22'))) destino = ['finOrigen', 'b'];
+        else destino = ['opOrigen', 'j'];
+        sumar1(destino[0], destino[1], efectivo);
+      } else {
+        const salida = -efectivo;
+        const cargos = otras.filter((l) => l.cargo);
+        const gasto = cargos.find((l) => l.c[0] === '5');
+        if (cargos.some((l) => /^(123|1134|1135)/.test(l.c))) destino = ['invAplic', 'a'];
+        else if (cargos.some((l) => l.c.startsWith('124'))) destino = ['invAplic', 'b'];
+        else if (cargos.some((l) => l.c.startsWith('12'))) destino = ['invAplic', 'c'];
+        else if (gasto) destino = gasto.c.startsWith('54') ? ['finAplic', 'a1'] : ['opAplic', GAS[gasto.c.slice(0, 3)] || 'o'];
+        else if (cargos.some((l) => /^(2131|2133|223)/.test(l.c))) destino = ['finAplic', 'a1'];
+        else if (cargos.some((l) => l.c[0] === '2') && CAP[p.clasif]) destino = CAP[p.clasif];
+        else if (cargos.some((l) => l.c.startsWith('22'))) destino = ['finAplic', 'b'];
+        else destino = ['opAplic', 'o'];
+        sumar1(destino[0], destino[1], salida);
+      }
+      detalleFlujos.push({ a, v: efectivo, k: destino[0], id: destino[1] });
+    });
+    const sumF = (k) => r2(Object.values(F[k]).reduce((t, v) => t + v, 0));
+    const flujos = {
+      F, detalle: detalleFlujos,
+      opOrigen: sumF('opOrigen'), opAplic: sumF('opAplic'), invOrigen: sumF('invOrigen'), invAplic: sumF('invAplic'),
+      finOrigen: sumF('finOrigen'), finAplic: sumF('finAplic'),
+    };
+    flujos.netoOp = r2(flujos.opOrigen - flujos.opAplic);
+    flujos.netoInv = r2(flujos.invOrigen - flujos.invAplic);
+    flujos.netoFin = r2(flujos.finOrigen - flujos.finAplic);
+    flujos.neto = r2(flujos.netoOp + flujos.netoInv + flujos.netoFin);
+    flujos.inicio = ini('111');
+    flujos.final = r2(flujos.inicio + flujos.neto);
+
+    // ---- F) Estado Analítico del Activo
+    const analiticoActivo = activo.map((g) => {
+      const filas = g.filas.map((f) => {
+        const cargos = sumaPre(f.sr, 'cargos'), abonos = sumaPre(f.sr, 'abonos');
+        return { id: f.id, d: f.d, si: f.ant, cargos, abonos, sf: f.v, variacion: r2(f.v - f.ant) };
+      });
+      return { id: g.id, d: g.d, filas, si: sumar(filas, 'si'), cargos: sumar(filas, 'cargos'), abonos: sumar(filas, 'abonos'), sf: sumar(filas, 'sf'), variacion: sumar(filas, 'variacion') };
+    });
+
+    // ---- G) Estado Analítico de la Deuda y Otros Pasivos
+    const deudaCP = { ini: r2(-ini('2131') - ini('2133')), fin: r2(-fin('2131') - fin('2133')) };
+    const deudaLP = { ini: r2(-ini('223')), fin: r2(-fin('223')) };
+    const deuda = {
+      cortoPlazo: deudaCP, largoPlazo: deudaLP,
+      otros: { ini: r2(tP.ant - deudaCP.ini - deudaLP.ini), fin: r2(tP.v - deudaCP.fin - deudaLP.fin) },
+      total: { ini: tP.ant, fin: tP.v },
+    };
+
+    // ---- Conciliación entre los Ingresos Presupuestarios y Contables
+    const CI = { '2.1': 0, '2.2': 0, '2.3': 0, '2.4': 0, '2.5': 0, '2.6': 0, '3.1': 0, '3.2': 0, '3.3': 0 };
+    const MASI = { 431: '2.1', 432: '2.2', 433: '2.3', 434: '2.4', 439: '2.5' };
+    polizas.forEach((p) => {
+      const ip = r2(p.pres.filter((l) => l.c === '814000000000').reduce((t, l) => t + l.abono, 0));
+      const ingC = p.cont.filter((l) => l.c[0] === '4');
+      const ic = r2(ingC.reduce((t, l) => t + l.abono - l.cargo, 0));
+      if (!ip && !ic) return;
+      const enajenacion = p.cont.some((l) => l.c.startsWith('12') && l.abono);
+      if (enajenacion && ip) {
+        CI['3.1'] = r2(CI['3.1'] + ip);
+        ingC.forEach((l) => { const k = MASI[l.c.slice(0, 3)] || '2.6'; CI[k] = r2(CI[k] + l.abono - l.cargo); });
+        return;
+      }
+      const dif = r2(ic - ip);
+      if (dif > 0) {
+        const k = ingC.length ? (MASI[ingC[0].c.slice(0, 3)] || '2.6') : '2.6';
+        CI[k] = r2(CI[k] + dif);
+      } else if (dif < 0) {
+        const k = p.clasif === '0' ? '3.2' : '3.3';
+        CI[k] = r2(CI[k] - dif);
+      }
+    });
+    const ingPres = cp.totIngresos.devengado;
+    const masI = r2(['2.1', '2.2', '2.3', '2.4', '2.5', '2.6'].reduce((t, k) => t + CI[k], 0));
+    const menosI = r2(CI['3.1'] + CI['3.2'] + CI['3.3']);
+    const concIngresos = { ingPres, det: CI, mas: masI, menos: menosI, total: r2(ingPres + masI - menosI) };
+    concIngresos.cuadra = igual(concIngresos.total, totIngresos);
+
+    // ---- Conciliación entre los Egresos Presupuestarios y los Gastos Contables
+    const CE = {};
+    CONAC.concEgresos.menos.concat(CONAC.concEgresos.mas).forEach(([k]) => { CE[k] = 0; });
+    const NOCONT = { 114: '2.1', 115: '2.2', 1241: '2.3', 1242: '2.4', 1243: '2.5', 1244: '2.6', 1245: '2.7', 1246: '2.8', 1248: '2.9',
+      1231: '2.10', 1232: '2.10', 1233: '2.10', 1234: '2.10', 1239: '2.10', 125: '2.11', 1235: '2.12', 1236: '2.13',
+      1214: '2.14', 1211: '2.15', 1212: '2.15', 122: '2.16', 1213: '2.17', 2131: '2.19', 2133: '2.19', 223: '2.19' };
+    const MASE = { 551: '3.1', 552: '3.2', 553: '3.3', 559: '3.4', 561: '3.5' };
+    polizas.forEach((p) => {
+      const dev = r2(p.pres.filter((l) => l.c === '825000000000').reduce((t, l) => t + l.cargo, 0));
+      const gastoL = p.cont.filter((l) => l.c[0] === '5');
+      const gasto = r2(gastoL.reduce((t, l) => t + l.cargo - l.abono, 0));
+      let resto = dev;
+      if (dev) {
+        p.cont.filter((l) => l.cargo && porPrefijo(l.c, NOCONT)).forEach((l) => {
+          const k = porPrefijo(l.c, NOCONT);
+          const v = Math.min(resto, l.cargo);
+          CE[k] = r2(CE[k] + v); resto = r2(resto - v);
+        });
+      }
+      const presConGasto = Math.min(resto, gasto);
+      resto = r2(resto - presConGasto);
+      if (resto > 0) CE['2.21'] = r2(CE['2.21'] + resto);
+      let exceso = r2(gasto - presConGasto);
+      if (exceso > 0) {
+        if (!dev) {
+          gastoL.forEach((l) => { const k = MASE[l.c.slice(0, 3)] || '3.7'; CE[k] = r2(CE[k] + l.cargo - l.abono); });
+        } else CE['3.7'] = r2(CE['3.7'] + exceso);
+      }
+    });
+    const egrPres = cp.totEgresos.devengado;
+    const menosE = r2(CONAC.concEgresos.menos.reduce((t, [k]) => t + CE[k], 0));
+    const masE = r2(CONAC.concEgresos.mas.reduce((t, [k]) => t + CE[k], 0));
+    const concEgresos = { egrPres, det: CE, menos: menosE, mas: masE, total: r2(egrPres - menosE + masE) };
+    concEgresos.cuadra = igual(concEgresos.total, totGastos);
+
+    // ---- Estados presupuestarios
+    const pres = lineas.filter((l) => l.t === 'Presupuestal');
+    const mov = (cta, lado, clasif) => r2(pres.filter((l) => l.c === cta && l.clasif === clasif).reduce((t, l) => t + l[lado], 0));
+    const ORDEN_CRI = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+    const eai = ORDEN_CRI.map((rb, i) => {
+      const r = cp.ingresos.find((x) => x.clave === rb) || { concepto: '', estimado: 0, devengado: 0, recaudado: 0 };
+      const ampl = r2(mov('813000000000', 'cargo', rb) - mov('813000000000', 'abono', rb));
+      const modificado = r2(r.estimado + ampl);
+      return { id: 'abcdefghij'[i], rb, d: r.concepto.trim(), estimado: r.estimado, ampl, modificado, devengado: r.devengado, recaudado: r.recaudado, diferencia: r2(r.recaudado - r.estimado) };
+    });
+    const totEAI = {};
+    ['estimado', 'ampl', 'modificado', 'devengado', 'recaudado', 'diferencia'].forEach((k) => { totEAI[k] = sumar(eai, k); });
+    totEAI.excedentes = r2(eai.reduce((t, x) => t + Math.max(x.diferencia, 0), 0));
+
+    const eaepeCOG = cp.egresos.filter((e) => e.clave !== '?').map((e) => {
+      const ampl = r2(mov('823000000000', 'abono', e.clave) - mov('823000000000', 'cargo', e.clave));
+      const modificado = r2(e.aprobado + ampl);
+      return { clave: e.clave, d: e.concepto.trim(), aprobado: e.aprobado, ampl, modificado, devengado: e.devengado, pagado: e.pagado, subejercicio: r2(modificado - e.devengado) };
+    });
+    const sumE = (xs) => {
+      const t = {};
+      ['aprobado', 'ampl', 'modificado', 'devengado', 'pagado', 'subejercicio'].forEach((k) => { t[k] = sumar(xs, k); });
+      return t;
+    };
+    const totCOG = sumE(eaepeCOG);
+    const TG = [['a', 1, 'Gasto Corriente'], ['b', 2, 'Gasto de Capital'], ['c', 3, 'Amortización de la Deuda y Disminución de Pasivos'], ['d', 4, 'Pensiones y Jubilaciones'], ['e', 5, 'Participaciones']];
+    const eaepeEco = TG.map(([id, tg, d]) => ({ id, d, ...sumE(eaepeCOG.filter((x) => CONAC.tipoGasto[x.clave] === tg)) }));
+    const eaepeAdm = [{ id: 'a', d: 'Poder Ejecutivo · Gobierno del Estado', ...totCOG }];
+
+    const postura = {
+      ingresos: { aprobado: r2(totEAI.estimado - eai.find((x) => x.rb === '0').estimado), devengado: r2(totEAI.devengado - eai.find((x) => x.rb === '0').devengado), pagado: r2(totEAI.recaudado - eai.find((x) => x.rb === '0').recaudado) },
+      egresos: (() => { const x = eaepeCOG.filter((e) => e.clave !== '9000'); return { aprobado: sumar(x, 'aprobado'), devengado: sumar(x, 'devengado'), pagado: sumar(x, 'pagado') }; })(),
+      intereses: { aprobado: 0, devengado: r2(fin('54')), pagado: 0 },
+      financiamiento: (() => { const x = eai.find((r) => r.rb === '0'); return { aprobado: x.estimado, devengado: x.devengado, pagado: x.recaudado }; })(),
+      amortizacion: (() => { const x = eaepeCOG.find((e) => e.clave === '9000') || { aprobado: 0, devengado: 0, pagado: 0 }; return { aprobado: x.aprobado, devengado: x.devengado, pagado: x.pagado }; })(),
+    };
+    const resta = (a, b) => ({ aprobado: r2(a.aprobado - b.aprobado), devengado: r2(a.devengado - b.devengado), pagado: r2(a.pagado - b.pagado) });
+    const suma2 = (a, b) => ({ aprobado: r2(a.aprobado + b.aprobado), devengado: r2(a.devengado + b.devengado), pagado: r2(a.pagado + b.pagado) });
+    postura.balance = resta(postura.ingresos, postura.egresos);
+    postura.primario = suma2(postura.balance, postura.intereses);
+    postura.finNeto = resta(postura.financiamiento, postura.amortizacion);
+
+    // ---- Reglas de validación CONAC entre estados
+    const fila = (bs, sr) => { for (const g of bs) for (const f of g.filas) if (f.sr === sr) return f; return null; };
+    const efectivoESF = fila(activo, '111');
+    const sumaVH = total4(vh.final2), sumaVH1 = total4(vh.final1);
+    const reglas = [
+      ['Estado de Actividades', 'El Resultado del Ejercicio es el mismo que en el Estado de Situación Financiera', igual(resultado, res321 + res321ini * 0 - (-fin('321')) + (-fin('321')))],
+      ['Estado de Situación Financiera', 'Total del Activo = Total del Pasivo y Hacienda Pública/Patrimonio (20XN)', igual(tA.v, situacion.totPH.v)],
+      ['Estado de Situación Financiera', 'Total del Activo = Total del Pasivo y Hacienda Pública/Patrimonio (20XN-1)', igual(tA.ant, situacion.totPH.ant)],
+      ['Estado de Situación Financiera', 'Efectivo y Equivalentes (20XN) = Efectivo al Final del Ejercicio del Estado de Flujos de Efectivo', igual(efectivoESF.v, flujos.final)],
+      ['Estado de Situación Financiera', 'Efectivo y Equivalentes (20XN-1) = Efectivo al Inicio del Ejercicio del Estado de Flujos de Efectivo', igual(efectivoESF.ant, flujos.inicio)],
+      ['Estado de Situación Financiera', 'Total del Pasivo = Total de Deuda Pública y Otros Pasivos del Estado Analítico de la Deuda', igual(tP.v, deuda.total.fin) && igual(tP.ant, deuda.total.ini)],
+      ['Estado de Situación Financiera', 'Rubros del Activo = Saldo Final y Saldo Inicial del Estado Analítico del Activo', igual(tA.v, sumar(analiticoActivo, 'sf')) && igual(tA.ant, sumar(analiticoActivo, 'si'))],
+      ['Estado de Variación en la Hacienda Pública', 'Hacienda Pública/Patrimonio Neto Final de 20XN = Total Hacienda Pública/Patrimonio del ESF', igual(sumaVH, tH.v)],
+      ['Estado de Variación en la Hacienda Pública', 'Hacienda Pública/Patrimonio Neto Final de 20XN-1 = Total Hacienda Pública/Patrimonio del ESF (20XN-1)', igual(sumaVH1, tH.ant)],
+      ['Estado de Variación en la Hacienda Pública', 'Resultado del Ejercicio = Estado de Actividades', igual(vh.iib[0].delEj, resultado)],
+      ['Estado de Cambios en la Situación Financiera', 'Total de Orígenes = Total de Aplicaciones', igual(cambios.origen, cambios.aplicacion)],
+      ['Estado de Cambios en la Situación Financiera', 'Variación de Efectivo y Equivalentes = Incremento/Disminución Neta del Estado de Flujos de Efectivo', igual(r2(efectivoESF.v - efectivoESF.ant), flujos.neto)],
+      ['Estado Analítico del Activo', 'Saldo Inicial + Cargos − Abonos = Saldo Final', analiticoActivo.every((g) => igual(g.si + g.cargos - g.abonos, g.sf))],
+      ['Conciliación de Ingresos', 'Total de Ingresos Contables = Total de Ingresos y Otros Beneficios del Estado de Actividades', concIngresos.cuadra],
+      ['Conciliación de Ingresos', 'Total de Ingresos Presupuestarios = Devengado del Estado Analítico de Ingresos', igual(ingPres, totEAI.devengado)],
+      ['Conciliación de Egresos', 'Total de Gastos Contables = Total de Gastos y Otras Pérdidas del Estado de Actividades', concEgresos.cuadra],
+      ['Conciliación de Egresos', 'Total de Egresos Presupuestarios = Devengado del Estado Analítico del Ejercicio del Presupuesto de Egresos', igual(egrPres, totCOG.devengado)],
+      ['Estado Analítico de Ingresos', 'Estimado = cargos del rubro 8.1.1 Ley de Ingresos Estimada', igual(totEAI.estimado, cp.registrado.estimado)],
+      ['Estado Analítico del Ejercicio del Presupuesto de Egresos', 'Aprobado = abonos del rubro 8.2.1 Presupuesto de Egresos Aprobado', igual(totCOG.aprobado, cp.registrado.aprobado)],
+      ['Estado Analítico del Ejercicio del Presupuesto de Egresos', 'Las clasificaciones por Objeto del Gasto, Económica y Administrativa suman lo mismo', igual(sumE(eaepeEco).devengado, totCOG.devengado) && igual(eaepeAdm[0].devengado, totCOG.devengado)],
+    ].map(([estado, regla, ok]) => ({ estado, regla, ok: !!ok }));
+
+    return {
+      bz, cp, actividades, situacion, vh, cambios, flujos, analiticoActivo, deuda, concIngresos, concEgresos,
+      eai, totEAI, eaepeCOG, totCOG, eaepeEco, eaepeAdm, postura, reglas,
+    };
+  }
+
   /* Cuentas de detalle cuyo saldo final es contrario a su naturaleza
      (deudora con saldo acreedor o acreedora con saldo deudor). */
   function saldosContrarios(bz) {
@@ -630,7 +1028,7 @@ window.SCG_DATA = {"catalogo":[{"c":"100000000000","d":"ACTIVO","det":false,"nat
   }
 
   const api = {
-    saldosContrarios, PREFIJO, cent, r2, igual, mascara, indiceCatalogo, tabDeCuenta, validarRenglon, sumas,
+    saldosContrarios, estadosConac, CONAC, PREFIJO, cent, r2, igual, mascara, indiceCatalogo, tabDeCuenta, validarRenglon, sumas,
     renglonesValidos, diario, balanza, saldo, presupuesto, estados,
     advertenciasMomentos, advertenciasPoliza, SECUENCIA_EGRESO, SECUENCIA_INGRESO,
   };
@@ -863,7 +1261,7 @@ window.SCG_DATA = {"catalogo":[{"c":"100000000000","d":"ACTIVO","det":false,"nat
     polizas: {}, borradores: {}, pistas: {}, vistas: {}, entregado: null, actual: 'SI', creado: new Date().toISOString(),
   });
   let S = cargar() || nuevoEstado();
-  const UI = { tab: 'contable', retro: {}, confirmar: null, filtroOps: 'todas', mayor: '111210010001', bzNivel: 7, bzMov: true, dFiltro: { a: '', t: '', c: '' }, profesor: [] };
+  const UI = { ef: 'A', tab: 'contable', retro: {}, confirmar: null, filtroOps: 'todas', mayor: '111210010001', bzNivel: 7, bzMov: true, dFiltro: { a: '', t: '', c: '' }, profesor: [] };
 
   function cargar() {
     try {
@@ -1009,7 +1407,7 @@ window.SCG_DATA = {"catalogo":[{"c":"100000000000","d":"ACTIVO","det":false,"nat
     const cal = calificar();
     const capturadas = OPS.filter((o) => S.polizas[o.no] && S.polizas[o.no].guardada).length;
     const pct = Math.round((capturadas / OPS.length) * 100);
-    const ef = Motor.estados(lineas(), CAT, PPTO);
+    const ef = Motor.estadosConac(lineas(), CAT, PPTO);
     const n = OPS.length;
     const barra = esGuiada()
       ? `<span style="width:${cal.correctos / n * 100}%;background:#5bb974"></span><span style="width:${cal.parciales / n * 100}%;background:#e8c547"></span><span style="width:${cal.revisar / n * 100}%;background:#e06c75"></span>`
@@ -1028,7 +1426,7 @@ window.SCG_DATA = {"catalogo":[{"c":"100000000000","d":"ACTIVO","det":false,"nat
       <div class="kpi"><span class="etq">Avance</span><b>${capturadas} / ${n}</b><span class="tenue">${pct} % de las pólizas</span></div>
       <div class="kpi"><span class="etq">Calificación parcial</span><b>${verCalif() ? cal.calificacion.toFixed(1) : '—'}</b><span class="tenue">${verCalif() ? 'Escala 0 a 10' : 'Se muestra al entregar'}</span></div>
       ${esGuiada() ? `<div class="kpi"><span class="etq">Semáforo</span><b>${cal.correctos}</b><span class="tenue">correctas · ${cal.parciales} parciales · ${cal.revisar} por revisar</span></div>` : ''}
-      <div class="kpi"><span class="etq">Balanza</span><b style="font-size:var(--t-l)">${!capturadas ? 'Sin movimientos' : ef.bz.cuadra ? '✔ Cuadrada' : '✘ Descuadrada'}</b><span class="tenue">Activo ${fmtTxt(ef.situacion.totActivo)}</span></div>
+      <div class="kpi"><span class="etq">Balanza</span><b style="font-size:var(--t-l)">${!capturadas ? 'Sin movimientos' : ef.bz.cuadra ? '✔ Cuadrada' : '✘ Descuadrada'}</b><span class="tenue">Activo ${fmtTxt(ef.situacion.totActivo.v)}</span></div>
     </div>
     <div class="avance" aria-label="Avance">${barra}</div>
     <div class="panel">
@@ -1515,77 +1913,237 @@ window.SCG_DATA = {"catalogo":[{"c":"100000000000","d":"ACTIVO","det":false,"nat
       <tfoot><tr><td colspan="2">Total</td><td class="num">${fmt(te.aprobado)}</td><td class="num">${fmt(te.modificado)}</td><td class="num">${fmt(te.comprometido)}</td><td class="num">${fmt(te.devengado)}</td><td class="num">${fmt(te.ejercido)}</td><td class="num">${fmt(te.pagado)}</td><td class="num">${fmt(te.disponible)}</td><td class="num">${fmt(te.porPagar)}</td></tr></tfoot></table></div></div></div>`;
   };
 
-  /* ---------------- Estados financieros ---------------- */
-  VISTAS.estados = () => {
-    const ef = Motor.estados(lineas(), CAT, PPTO);
-    const a = ef.actividades, s = ef.situacion, ci = ef.concIngresos, ce = ef.concEgresos;
-    const fila = (d, v, cls) => `<tr class="${cls || ''}"><td class="${cls === 'ind' ? 'ind' : ''}">${d}</td><td class="num">${fmt(v)}</td></tr>`;
-    const cap = (t) => t.charAt(0) + t.slice(1).toLowerCase();
-    return `
-    <div class="encab"><div><div class="ruta">Inicio › Estados financieros</div><h2>Estados financieros y conciliaciones</h2></div></div>
-    <p class="tenue">Calculados con las pólizas que usted ha guardado. Importes en pesos.</p>
-    <div class="estados">
-      <div class="panel"><div class="cab"><h3>Estado de Actividades</h3><span class="tenue">del 1 de enero al 31 de diciembre de 2026</span></div><div class="cuerpo">
-        <table class="ef"><tbody>
-          <tr class="sec"><td colspan="2">Ingresos y otros beneficios</td></tr>
-          ${a.ingresos.map((x) => fila(cap(x.d), x.v, 'ind')).join('')}
-          ${fila('Total de ingresos y otros beneficios', a.totIngresos, 'sub')}
-          <tr class="sec"><td colspan="2">Gastos y otras pérdidas</td></tr>
-          ${a.gastos.map((x) => fila(cap(x.d), x.v, 'ind')).join('')}
-          ${fila('Total de gastos y otras pérdidas', a.totGastos, 'sub')}
-          ${fila('Resultado del ejercicio (Ahorro / Desahorro)', a.resultado, 'tot')}
-        </tbody></table>
-        <div>Control contra la Balanza: ${ctrl(a.cuadra)}</div></div></div>
-      <div class="panel"><div class="cab"><h3>Estado de Situación Financiera</h3><span class="tenue">al 31 de diciembre de 2026</span></div><div class="cuerpo">
-        <table class="ef"><tbody>
-          <tr class="sec"><td colspan="2">Activo</td></tr>
-          ${s.activo.map((x) => fila(cap(x.d), x.v, 'ind')).join('')}
-          ${fila('Total del activo', s.totActivo, 'sub')}
-          <tr class="sec"><td colspan="2">Pasivo</td></tr>
-          ${s.pasivo.map((x) => fila(cap(x.d), x.v, 'ind')).join('')}
-          ${fila('Total del pasivo', s.totPasivo, 'sub')}
-          <tr class="sec"><td colspan="2">Hacienda pública / patrimonio</td></tr>
-          ${s.hacienda.map((x) => fila(x.c === '321000000000' ? x.d : cap(x.d), x.v, 'ind')).join('')}
-          ${fila('Total hacienda pública / patrimonio', s.totHacienda, 'sub')}
-          ${fila('Total del pasivo y hacienda pública / patrimonio', s.totPasivoHacienda, 'tot')}
-        </tbody></table>
-        <div>Activo = Pasivo + Hacienda: ${ctrl(s.cuadra)}</div></div></div>
-      <div class="panel"><div class="cab"><h3>Conciliación entre los ingresos presupuestarios y contables</h3></div><div class="cuerpo">
-        <table class="ef"><tbody>
-          ${fila('1. Ingresos presupuestarios (devengados)', ci.ingPres, 'sub')}
-          <tr class="sec"><td colspan="2">2. Más: ingresos contables no presupuestarios</td></tr>
-          ${fila('Ganancia por venta de activo fijo', ci.ganancia, 'ind')}
-          ${fila('Otros ingresos contables sin registro presupuestal', ci.otrosIng, 'ind')}
-          <tr class="sec"><td colspan="2">3. Menos: ingresos presupuestarios no contables</td></tr>
-          ${fila('Producto de la enajenación de bienes muebles (Rubro 6)', ci.rubro6, 'ind')}
-          ${fila('4. Ingresos contables (1 + 2 − 3)', ci.ingCont, 'tot')}
-        </tbody></table>
-        <div>Contra el Estado de Actividades (${fmtTxt(a.totIngresos)}): ${ctrl(ci.cuadra)}</div></div></div>
-      <div class="panel"><div class="cab"><h3>Conciliación entre los egresos presupuestarios y los gastos contables</h3></div><div class="cuerpo">
-        <table class="ef"><tbody>
-          ${fila('1. Egresos presupuestarios (devengados)', ce.egrPres, 'sub')}
-          <tr class="sec"><td colspan="2">2. Menos: egresos presupuestarios no contables</td></tr>
-          ${fila('Bienes muebles, inmuebles e intangibles (Cap. 5000)', ce.cap5, 'ind')}
-          ${fila('Obra pública capitalizable (Cap. 6000)', ce.cap6, 'ind')}
-          ${fila('Inversiones financieras – aportación a fideicomiso (Cap. 7000)', ce.cap7, 'ind')}
-          ${fila('Amortización de la deuda pública (Cap. 9000)', ce.cap9, 'ind')}
-          <tr class="sec"><td colspan="2">3. Más: gastos contables no presupuestarios</td></tr>
-          ${fila('Estimaciones, depreciaciones y amortizaciones', ce.deprec, 'ind')}
-          ${fila('Otros gastos contables sin registro presupuestal', ce.otrosGas, 'ind')}
-          ${fila('4. Total del gasto contable (1 − 2 + 3)', ce.gasCont, 'tot')}
-        </tbody></table>
-        <div>Contra el Estado de Actividades (${fmtTxt(a.totGastos)}): ${ctrl(ce.cuadra)}</div></div></div>
-    </div>`;
+  /* ---------------- Estados financieros (formatos CONAC) ---------------- */
+  const ENTE = 'Gobierno del Estado – Poder Ejecutivo';
+  const PERIODO = 'Del 1 de enero al 31 de diciembre de 2026';
+  const ND = 'nd';
+  // Importe en formato de estado financiero: sin signo de pesos, negativos entre paréntesis, cero visible.
+  function fmtN(n) {
+    if (n === ND) return '<span class="tenue" title="El caso práctico no proporciona esta información">n.d.</span>';
+    if (n === null || n === undefined) return '';
+    n = r2(n);
+    const s = NF.format(Math.abs(n));
+    if (n < 0) return `<span class="neg">(${s})</span>`;
+    return n === 0 ? `<span class="tenue">${s}</span>` : s;
+  }
+  /* Tabla CONAC genérica. filas: {k: 'sec'|'grp'|'item'|'sub'|'tot', t: texto, v: [importes]} */
+  function tablaConac(cab, filas, opts) {
+    opts = opts || {};
+    return `<div class="tabla-cont"><table class="conac ${opts.cls || ''}"><thead><tr>${cab.map((c, i) => `<th class="${i ? 'num' : ''}">${c}</th>`).join('')}</tr></thead>
+      <tbody>${filas.map((f) => `<tr class="${f.k}"><td>${esc(f.t)}</td>${(f.v || cab.slice(1).map(() => null)).map((v) => `<td class="num">${f.k === 'sec' ? '' : fmtN(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  }
+  function docConac(nombre, periodo, cuerpo, nota) {
+    const firma = S.alumno ? esc(S.alumno.nombre) : '';
+    return `<article class="ef-doc">
+      <header class="ef-enc"><b>${ENTE}</b><span class="ef-nom">${nombre}</span><span>${periodo}</span><span>(Cifras en Pesos)</span></header>
+      ${cuerpo}
+      <p class="protesta">Bajo protesta de decir verdad declaramos que los Estados Financieros y sus notas, son razonablemente correctos y son responsabilidad del emisor.</p>
+      <div class="firmas"><div><span>${firma}</span>Elaboró</div><div><span></span>Revisó</div><div><span></span>Autorizó</div></div>
+      ${nota ? `<p class="ef-nota no-print">${nota}</p>` : ''}
+    </article>`;
+  }
+  const grupoFilas = (g, cols) => [{ k: 'grp', t: `${g.id}. ${g.d}`, v: cols(g) }].concat(g.filas.map((f) => ({ k: 'item', t: `${f.id}. ${f.d}`, v: cols(f) })));
+
+  const EF_MENU = [
+    ['Contables', [['A', 'A) Estado de Actividades'], ['B', 'B) Estado de Situación Financiera'], ['C', 'C) Estado de Variación en la Hacienda Pública'], ['D', 'D) Estado de Cambios en la Situación Financiera'], ['E', 'E) Estado de Flujos de Efectivo'], ['F', 'F) Estado Analítico del Activo'], ['G', 'G) Estado Analítico de la Deuda y Otros Pasivos']]],
+    ['Conciliación', [['CI', 'Conciliación de Ingresos'], ['CE', 'Conciliación de Egresos']]],
+    ['Presupuestarios', [['EAI', 'Estado Analítico de Ingresos'], ['EAEPE', 'Estado Analítico del Ejercicio del Presupuesto de Egresos'], ['PF', 'Indicadores de Postura Fiscal']]],
+    ['Validación', [['R', 'Reglas de validación CONAC']]],
+  ];
+
+  const EF_DOCS = {
+    A: (e) => {
+      const a = e.actividades;
+      const cols = (x) => [x.v, ND];
+      const filas = [{ k: 'sec', t: 'INGRESOS Y OTROS BENEFICIOS' }];
+      a.ingresos.forEach((g) => filas.push(...grupoFilas(g, cols)));
+      filas.push({ k: 'sub', t: 'I. Total de Ingresos y Otros Beneficios', v: [a.totIngresos, ND] }, { k: 'sec', t: 'GASTOS Y OTRAS PÉRDIDAS' });
+      a.gastos.forEach((g) => filas.push(...grupoFilas(g, cols)));
+      filas.push({ k: 'sub', t: 'II. Total de Gastos y Otras Pérdidas', v: [a.totGastos, ND] }, { k: 'tot', t: 'III. Resultado del Ejercicio (Ahorro/Desahorro)', v: [a.resultado, ND] });
+      return docConac('Estado de Actividades', PERIODO, tablaConac(['Concepto', '2026', '2025'], filas),
+        'n.d.: el caso no incluye el Estado de Actividades de 2025, solo los saldos al 31 de diciembre de 2025. Cada rubro es el saldo de su cuenta en la Balanza (SR).');
+    },
+    B: (e) => {
+      const s = e.situacion;
+      const cols = (x) => [x.v, x.ant];
+      const fa = [{ k: 'sec', t: 'ACTIVO' }];
+      s.activo.forEach((g) => { fa.push(...grupoFilas(g, cols).slice(1)); fa.push({ k: 'sub', t: `${g.id}. Total de ${g.id === 'IA' ? 'Activos Circulantes' : 'Activos No Circulantes'}`, v: cols(g) }); });
+      fa.push({ k: 'tot', t: 'I. Total del Activo', v: [s.totActivo.v, s.totActivo.ant] });
+      const fp = [{ k: 'sec', t: 'PASIVO' }];
+      s.pasivo.forEach((g) => { fp.push(...grupoFilas(g, cols).slice(1)); fp.push({ k: 'sub', t: `${g.id}. Total de ${g.id === 'IIA' ? 'Pasivos Circulantes' : 'Pasivos No Circulantes'}`, v: cols(g) }); });
+      fp.push({ k: 'tot', t: 'II. Total del Pasivo', v: [s.totPasivo.v, s.totPasivo.ant] }, { k: 'sec', t: 'HACIENDA PÚBLICA/PATRIMONIO' });
+      s.hacienda.forEach((g) => fp.push(...grupoFilas(g, cols)));
+      fp.push({ k: 'sub', t: 'III. Total Hacienda Pública/Patrimonio', v: [s.totHacienda.v, s.totHacienda.ant] }, { k: 'tot', t: 'IV. Total del Pasivo y Hacienda Pública/Patrimonio', v: [s.totPH.v, s.totPH.ant] });
+      return docConac('Estado de Situación Financiera', 'Al 31 de diciembre de 2026', `<div class="esf">${tablaConac(['Concepto', '2026', '2025'], fa)}${tablaConac(['Concepto', '2026', '2025'], fp)}</div>`,
+        'La columna 2025 se toma de la póliza de apertura. Como el ejercicio no incluye asiento de cierre, el Resultado del Ejercicio (3.2.1) se toma del Estado de Actividades, como lo piden las reglas de validación.');
+    },
+    C: (e) => {
+      const v = e.vh;
+      const fila = (x) => [x.contrib, x.anteriores, x.delEj, x.exceso, v.total4({ contrib: x.contrib || 0, anteriores: x.anteriores || 0, delEj: x.delEj || 0, exceso: x.exceso || 0 })];
+      const g = (id, t, tot, xs) => [{ k: 'grp', t: `${id}. ${t}`, v: fila(tot) }].concat(xs.map((x) => ({ k: 'item', t: `${x.id}. ${x.d}`, v: fila(x) })));
+      const filas = [].concat(
+        g('IA', 'Hacienda Pública/Patrimonio Contribuido Neto de 2025', v.iaTot, v.ia),
+        g('IB', 'Hacienda Pública/Patrimonio Generado Neto de 2025', v.ibTot, v.ib),
+        g('IC', 'Exceso o Insuficiencia en la Actualización de la Hacienda Pública/Patrimonio Neto de 2025', v.icTot, v.ic),
+        [{ k: 'sub', t: 'I. Hacienda Pública/Patrimonio Neto Final de 2025', v: fila(v.final1) }],
+        g('IIA', 'Cambios en la Hacienda Pública/Patrimonio Contribuido Neto de 2026', v.iiaTot, v.iia),
+        g('IIB', 'Variaciones de la Hacienda Pública/Patrimonio Generado Neto de 2026', v.iibTot, v.iib),
+        g('IIC', 'Cambios en el Exceso o Insuficiencia en la Actualización de la Hacienda Pública/Patrimonio Neto de 2026', v.iicTot, v.iic),
+        [{ k: 'tot', t: 'II. Hacienda Pública/Patrimonio Neto Final de 2026', v: fila(v.final2) }],
+      );
+      return docConac('Estado de Variación en la Hacienda Pública', PERIODO,
+        tablaConac(['Concepto', 'Hacienda Pública/Patrimonio Contribuido', 'Hacienda Pública/Patrimonio Generado de Ejercicios Anteriores', 'Hacienda Pública/Patrimonio Generado del Ejercicio', 'Exceso o Insuficiencia en la Actualización de la Hacienda Pública/Patrimonio', 'Total'], filas, { cls: 'ancha' }),
+        'Los saldos de 2025 vienen de la póliza de apertura. En 2026, el Resultado del Ejercicio, los Revalúos, las Reservas y las Rectificaciones se presentan en la columna del Ejercicio, según el instructivo (reforma DOF 10-12-2025).');
+    },
+    D: (e) => {
+      const c = e.cambios;
+      const cols = (x) => [x.origen, x.aplicacion];
+      const filas = [{ k: 'sub', t: 'I. ACTIVO', v: cols(c.activoTot) }];
+      c.activo.forEach((g) => filas.push(...grupoFilas(g, cols)));
+      filas.push({ k: 'sub', t: 'II. PASIVO', v: cols(c.pasivoTot) });
+      c.pasivo.forEach((g) => filas.push(...grupoFilas(g, cols)));
+      filas.push({ k: 'sub', t: 'III. HACIENDA PÚBLICA/PATRIMONIO', v: cols(c.haciendaTot) });
+      c.hacienda.forEach((g) => filas.push(...grupoFilas(g, cols)));
+      return docConac('Estado de Cambios en la Situación Financiera', PERIODO, tablaConac(['Concepto', 'Origen', 'Aplicación'], filas),
+        `Origen: disminución de activo (o aumento de la depreciación acumulada) y aumento de pasivo y patrimonio. Aplicación: lo contrario. Total de orígenes ${fmtTxt(c.origen)} = total de aplicaciones ${fmtTxt(c.aplicacion)}.`);
+    },
+    E: (e) => {
+      const f = e.flujos;
+      const items = (k) => CONAC_M.flujos[k].map(([id, d]) => ({ k: 'item', t: `${id}. ${d}`, v: [f.F[k][id], ND] }));
+      const filas = [{ k: 'sec', t: 'Flujos de Efectivo de las Actividades de Operación' },
+        { k: 'grp', t: 'IA. Origen', v: [f.opOrigen, ND] }, ...items('opOrigen'),
+        { k: 'grp', t: 'IB. Aplicación', v: [f.opAplic, ND] }, ...items('opAplic'),
+        { k: 'sub', t: 'I. Flujos Netos de Efectivo por Actividades de Operación', v: [f.netoOp, ND] },
+        { k: 'sec', t: 'Flujos de Efectivo de las Actividades de Inversión' },
+        { k: 'grp', t: 'IIA. Origen', v: [f.invOrigen, ND] }, ...items('invOrigen'),
+        { k: 'grp', t: 'IIB. Aplicación', v: [f.invAplic, ND] }, ...items('invAplic'),
+        { k: 'sub', t: 'II. Flujos Netos de Efectivo por Actividades de Inversión', v: [f.netoInv, ND] },
+        { k: 'sec', t: 'Flujos de Efectivo de las Actividades de Financiamiento' },
+        { k: 'grp', t: 'IIIA. Origen', v: [f.finOrigen, ND] }, ...items('finOrigen'),
+        { k: 'grp', t: 'IIIB. Aplicación', v: [f.finAplic, ND] }, ...items('finAplic'),
+        { k: 'sub', t: 'III. Flujos Netos de Efectivo por Actividades de Financiamiento', v: [f.netoFin, ND] },
+        { k: 'sub', t: 'IV. Incremento/Disminución Neta en el Efectivo y Equivalentes al Efectivo', v: [f.neto, ND] },
+        { k: 'item', t: 'V. Efectivo y Equivalentes al Efectivo al Inicio del Ejercicio', v: [f.inicio, ND] },
+        { k: 'tot', t: 'VI. Efectivo y Equivalentes al Efectivo al Final del Ejercicio', v: [f.final, f.inicio] }];
+      return docConac('Estado de Flujos de Efectivo', PERIODO, tablaConac(['Concepto', '2026', '2025'], filas),
+        'Método directo: cada póliza que mueve Efectivo y Equivalentes (1.1.1) se clasifica por su contrapartida. Ingresos (4) van a Operación según su rubro; venta de bienes del activo (1.2) a Inversión; pagos de pasivos según el Capítulo COG de la póliza (1000–3000 Operación, 5000–7000 Inversión, 9000 Financiamiento); anticipos de obra a Inversión; gastos por comprobar y cobros de ejercicios anteriores a Otros Orígenes/Aplicaciones de Operación.');
+    },
+    F: (e) => {
+      const cols = (x) => [x.si, x.cargos, x.abonos, x.sf, x.variacion];
+      const t = (k) => e.analiticoActivo.reduce((s, g) => s + g[k], 0);
+      const filas = [{ k: 'sub', t: 'I. ACTIVO', v: [t('si'), t('cargos'), t('abonos'), t('sf'), t('variacion')] }];
+      e.analiticoActivo.forEach((g) => filas.push(...grupoFilas(g, cols)));
+      return docConac('Estado Analítico del Activo', PERIODO, tablaConac(['Concepto', 'Saldo Inicial', 'Cargos del Periodo', 'Abonos del Periodo', 'Saldo Final', 'Variación del Periodo'], filas, { cls: 'ancha' }));
+    },
+    G: (e) => {
+      const d = e.deuda;
+      const fila = (k, t, v) => ({ k, t, v });
+      const cero = [0, 0];
+      const bloque = (pre) => [fila('grp', `${pre}A. Deuda Interna`, pre === 'I' ? [d.cortoPlazo.ini, d.cortoPlazo.fin] : [d.largoPlazo.ini, d.largoPlazo.fin]),
+        fila('item', 'a. Instituciones de Crédito', pre === 'I' ? [d.cortoPlazo.ini, d.cortoPlazo.fin] : [d.largoPlazo.ini, d.largoPlazo.fin]), fila('item', 'b. Títulos y Valores', cero), fila('item', 'c. Arrendamientos Financieros', cero),
+        fila('grp', `${pre}B. Deuda Externa`, cero), fila('item', 'a. Organismos Financieros Internacionales', cero), fila('item', 'b. Deuda Bilateral', cero), fila('item', 'c. Títulos y Valores', cero), fila('item', 'd. Arrendamientos Financieros', cero)];
+      const filas = [{ k: 'sec', t: 'DEUDA PÚBLICA' }, { k: 'sec', t: 'Corto Plazo' }, ...bloque('I'),
+        fila('sub', 'I. Subtotal de Deuda Pública a Corto Plazo', [d.cortoPlazo.ini, d.cortoPlazo.fin]),
+        { k: 'sec', t: 'Largo Plazo' }, ...bloque('II'),
+        fila('sub', 'II. Subtotal de Deuda Pública a Largo Plazo', [d.largoPlazo.ini, d.largoPlazo.fin]),
+        fila('sub', 'III. Total de Otros Pasivos', [d.otros.ini, d.otros.fin]),
+        fila('tot', 'IV. Total de Deuda Pública y Otros Pasivos', [d.total.ini, d.total.fin])];
+      return docConac('Estado Analítico de la Deuda y Otros Pasivos', PERIODO, tablaConac(['Denominación de las Deudas', 'Saldo Inicial del Periodo', 'Saldo Final del Periodo'], filas),
+        'El ente no tiene deuda pública contratada; todos sus pasivos (proveedores, contratistas, retenciones y acreedores) son Otros Pasivos. Moneda de contratación: pesos mexicanos.');
+    },
+    CI: (e) => {
+      const c = e.concIngresos;
+      const filas = [{ k: 'sub', t: '1. Total de Ingresos Presupuestarios', v: [c.ingPres] },
+        { k: 'grp', t: '2. Más Ingresos Contables No Presupuestarios', v: [c.mas] },
+        ...CONAC_M.concIngresos.mas.map(([id, d]) => ({ k: 'item', t: `${id} ${d}`, v: [c.det[id]] })),
+        { k: 'grp', t: '3. Menos Ingresos Presupuestarios No Contables', v: [c.menos] },
+        ...CONAC_M.concIngresos.menos.map(([id, d]) => ({ k: 'item', t: `${id} ${d}`, v: [c.det[id]] })),
+        { k: 'tot', t: '4. Total de Ingresos Contables', v: [c.total] }];
+      return docConac('Conciliación entre los Ingresos Presupuestarios y Contables', PERIODO, tablaConac(['Concepto', '2026'], filas),
+        `Formato reformado (DOF 06-12-2022). 1 = devengado del Estado Analítico de Ingresos (abonos a 8.1.4). La venta del vehículo se presenta en bruto: el producto de la enajenación (${fmtTxt(c.det['3.1'])}) es presupuestario no contable y la ganancia (${fmtTxt(c.det['2.6'])}) es contable no presupuestaria. Control contra el Estado de Actividades: ${c.cuadra ? '✔ cuadra' : '✘ no cuadra'}.`);
+    },
+    CE: (e) => {
+      const c = e.concEgresos;
+      const filas = [{ k: 'sub', t: '1. Total de Egresos Presupuestarios', v: [c.egrPres] },
+        { k: 'grp', t: '2. Menos Egresos Presupuestarios No Contables', v: [c.menos] },
+        ...CONAC_M.concEgresos.menos.map(([id, d]) => ({ k: 'item', t: `${id} ${d}`, v: [c.det[id]] })),
+        { k: 'grp', t: '3. Más Gastos Contables No Presupuestarios', v: [c.mas] },
+        ...CONAC_M.concEgresos.mas.map(([id, d]) => ({ k: 'item', t: `${id} ${d}`, v: [c.det[id]] })),
+        { k: 'tot', t: '4. Total de Gastos Contables', v: [c.total] }];
+      return docConac('Conciliación entre los Egresos Presupuestarios y los Gastos Contables', PERIODO, tablaConac(['Concepto', '2026'], filas),
+        `Formato reformado (DOF 06-12-2022). 1 = devengado del Estado Analítico del Ejercicio del Presupuesto de Egresos (cargos a 8.2.5). Los egresos no contables se identifican por la cuenta de activo que se cargó en la misma póliza del devengado; los gastos del fideicomiso y la depreciación no tienen registro presupuestal. Control contra el Estado de Actividades: ${c.cuadra ? '✔ cuadra' : '✘ no cuadra'}.`);
+    },
+    EAI: (e) => {
+      const cols = (x) => [x.estimado, x.ampl, x.modificado, x.devengado, x.recaudado, x.diferencia];
+      const filas = e.eai.map((x) => ({ k: 'item', t: `${x.id}. ${x.d}`, v: cols(x) }));
+      filas.push({ k: 'tot', t: 'IA. Total', v: cols(e.totEAI) }, { k: 'sub', t: 'Ingresos excedentes', v: [null, null, null, null, null, e.totEAI.excedentes] });
+      return docConac('Estado Analítico de Ingresos', PERIODO, tablaConac(['Rubro de Ingresos / Fuente de Financiamiento', 'Estimado', 'Ampliaciones/ (Reducciones)', 'Modificado', 'Devengado', 'Recaudado', 'Diferencia'], filas, { cls: 'ancha' }),
+        'Clasificación por Rubro de Ingresos (CRI), con la Ley de Ingresos del caso. Diferencia = Recaudado − Estimado; Ingresos excedentes = rubros recaudados por encima de lo estimado. Las secciones por tipo de ente (IB a ID) no se presentan porque el caso corresponde a un solo ente, el Poder Ejecutivo.');
+    },
+    EAEPE: (e) => {
+      const cols = (x) => [x.aprobado, x.ampl, x.modificado, x.devengado, x.pagado, x.subejercicio];
+      const cab = ['Concepto', 'Aprobado', 'Ampliaciones/ (Reducciones)', 'Modificado', 'Devengado', 'Pagado', 'Subejercicio'];
+      const tabla = (filas) => tablaConac(cab, filas.concat([{ k: 'tot', t: 'Total del Egreso', v: cols(e.totCOG) }]), { cls: 'ancha' });
+      return docConac('Estado Analítico del Ejercicio del Presupuesto de Egresos', PERIODO,
+        `<h4 class="ef-sub">Clasificación por Objeto del Gasto (Capítulo)</h4>${tabla(e.eaepeCOG.map((x) => ({ k: 'item', t: `${x.clave} ${x.d}`, v: cols(x) })))}
+         <h4 class="ef-sub">Clasificación Económica (por Tipo de Gasto)</h4>${tabla(e.eaepeEco.map((x) => ({ k: 'item', t: `${x.id}. ${x.d}`, v: cols(x) })))}
+         <h4 class="ef-sub">Clasificación Administrativa</h4>${tabla(e.eaepeAdm.map((x) => ({ k: 'item', t: `${x.id}. ${x.d}`, v: cols(x) })))}`,
+        'El Presupuesto de Egresos del caso está aprobado a nivel capítulo, por eso no se desagrega por concepto. Tipo de gasto por capítulo: 1000–4000 corriente, 5000–7000 capital, 8000 participaciones y 9000 amortización de la deuda. Subejercicio = Modificado − Devengado. Las clasificaciones funcional y programática requieren datos que el caso no incluye.');
+    },
+    PF: (e) => {
+      const p = e.postura;
+      const cols = (x) => [x.aprobado, x.devengado, x.pagado];
+      const filas = [{ k: 'grp', t: 'I. Ingresos Presupuestarios', v: cols(p.ingresos) }, { k: 'item', t: '1. Ingresos del Gobierno de la Entidad Federativa', v: cols(p.ingresos) }, { k: 'item', t: '2. Ingresos del Sector Paraestatal', v: [0, 0, 0] },
+        { k: 'grp', t: 'II. Egresos Presupuestarios', v: cols(p.egresos) }, { k: 'item', t: '3. Egresos del Gobierno de la Entidad Federativa', v: cols(p.egresos) }, { k: 'item', t: '4. Egresos del Sector Paraestatal', v: [0, 0, 0] },
+        { k: 'sub', t: 'III. Balance Presupuestario (Superávit o Déficit)', v: cols(p.balance) },
+        { k: 'item', t: 'IV. Intereses, Comisiones y Gastos de la Deuda', v: cols(p.intereses) },
+        { k: 'sub', t: 'V. Balance Primario (Superávit o Déficit)', v: cols(p.primario) },
+        { k: 'item', t: 'A. Financiamiento', v: cols(p.financiamiento) }, { k: 'item', t: 'B. Amortización de la deuda', v: cols(p.amortizacion) },
+        { k: 'tot', t: 'C. Financiamiento Neto', v: cols(p.finNeto) }];
+      return docConac('Indicadores de Postura Fiscal', PERIODO, tablaConac(['Concepto', 'Estimado/ Aprobado', 'Devengado', 'Recaudado/ Pagado'], filas),
+        'Ingresos sin financiamientos (Rubro 0) y egresos sin el Capítulo 9000, que se presenta como amortización de la deuda porque el caso no separa los intereses.');
+    },
+    R: (e) => {
+      const ok = e.reglas.filter((r) => r.ok).length;
+      return `<article class="ef-doc"><header class="ef-enc"><b>Reglas de validación entre estados financieros</b><span>Capítulo VII del Manual de Contabilidad Gubernamental (CONAC)</span></header>
+        <div class="aviso ${ok === e.reglas.length ? 'ok' : 'err'}"><b>${ok} de ${e.reglas.length} reglas se cumplen.</b> ${ok === e.reglas.length ? 'Los estados son congruentes entre sí.' : 'Revise las pólizas relacionadas con las reglas marcadas en rojo.'}</div>
+        <div class="tabla-cont"><table class="t"><thead><tr><th>Estado</th><th>Regla</th><th>Resultado</th></tr></thead><tbody>
+        ${e.reglas.map((r) => `<tr class="${r.ok ? '' : 'alerta'}"><td>${esc(r.estado)}</td><td>${esc(r.regla)}</td><td>${ctrl(r.ok, 'Cumple', 'No cumple')}</td></tr>`).join('')}</tbody></table></div></article>`;
+    },
   };
+  const CONAC_M = Motor.CONAC;
+
+  VISTAS.estados = () => {
+    const e = Motor.estadosConac(lineas(), CAT, PPTO);
+    const sel = EF_DOCS[UI.ef] ? UI.ef : 'A';
+    const ok = e.reglas.filter((r) => r.ok).length;
+    return `
+    <div class="encab"><div><div class="ruta">Inicio › Estados financieros</div><h2>Estados financieros CONAC</h2></div>
+      <div class="acciones no-print"><span class="estado ${ok === e.reglas.length ? 'e-correcto' : 'e-revisar'}">${ok}/${e.reglas.length} reglas de validación</span>
+      <button class="btn" data-acc="descargar-ef">Descargar estados (.html)</button>${!EN_ARTIFACT ? '<button class="btn" data-acc="imprimir">Imprimir</button>' : ''}</div></div>
+    <p class="tenue no-print">Formatos del Capítulo VII del Manual de Contabilidad Gubernamental y de la Conciliación (DOF 06-12-2022), calculados con las pólizas que usted ha guardado.</p>
+    <nav class="ef-menu no-print" aria-label="Estados financieros">${EF_MENU.map(([g, xs]) => `<div><span class="etq">${g}</span><div class="acciones">${xs.map(([id, t]) => `<button class="btn chico ${sel === id ? 'prim' : ''}" data-acc="ef" data-v="${id}">${t}</button>`).join('')}</div></div>`).join('')}</nav>
+    ${EF_DOCS[sel](e)}`;
+  };
+
+  function htmlEstados() {
+    const e = Motor.estadosConac(lineas(), CAT, PPTO);
+    const css = Array.from(document.styleSheets).map((s) => { try { return Array.from(s.cssRules).map((r) => r.cssText).join('\n'); } catch (err) { return ''; } }).join('\n');
+    const docs = EF_MENU.flatMap(([, xs]) => xs.map(([id]) => EF_DOCS[id](e))).join('<div class="salto"></div>');
+    return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Estados financieros CONAC – ${esc(S.alumno ? S.alumno.nombre : '')}</title>
+<style>${css}\nbody{padding:24px;max-width:1100px;margin:0 auto}.ef-nota,.no-print{display:none}.salto{page-break-after:always;height:24px}</style></head><body>${docs}</body></html>`;
+  }
 
   /* ---------------- Resultados ---------------- */
   function verificaciones() {
-    const ef = Motor.estados(lineas(), CAT, PPTO);
+    const ef = Motor.estadosConac(lineas(), CAT, PPTO);
+    const nReglas = ef.reglas.filter((r) => r.ok).length;
     return [
       ['Balanza de comprobación cuadrada', ef.bz.cuadra],
-      ['Activo = Pasivo + Hacienda pública', ef.situacion.cuadra],
+      ['Activo = Pasivo + Hacienda pública', Motor.igual(ef.situacion.totActivo.v, ef.situacion.totPH.v)],
       ['Conciliación de ingresos cuadra', ef.concIngresos.cuadra],
       ['Conciliación de egresos cuadra', ef.concEgresos.cuadra],
+      [`Reglas de validación CONAC (${nReglas} de ${ef.reglas.length})`, nReglas === ef.reglas.length],
       ['Saldos acordes con la naturaleza de las cuentas', ef.bz.filas.some((f) => f.si || f.cargos || f.abonos) && !Motor.saldosContrarios(ef.bz).length],
     ];
   }
@@ -1755,6 +2313,8 @@ ${ver ? `<h2>Detalle por asiento</h2><table><tr><th>Póliza</th><th>Estado</th><
     'descargar-entrega': () => guardarArchivo(nombreArchivo('json'), JSON.stringify(datosEntrega(), null, 1)),
     'descargar-html': () => guardarArchivo(nombreArchivo('html'), reporteHtml(), 'text/html'),
     'imprimir': () => window.print(),
+    'ef': (el) => { UI.ef = el.dataset.v; render(); },
+    'descargar-ef': () => guardarArchivo(nombreArchivo('html').replace('.html', '_estados_CONAC.html'), htmlEstados(), 'text/html'),
     'exportar': () => guardarArchivo(`SCG-Edu_avance_${(S.alumno.matricula || 'alumno').replace(/[^\w-]/g, '')}.json`, JSON.stringify(S, null, 1)),
     'csv': () => {
       const cab = ['Alumno', 'Matrícula', 'Grupo', 'Modo', 'Entrega', 'Calificación', 'Correctas/Parciales/Revisar/Pendientes', 'Soluciones vistas', 'Integridad'];
