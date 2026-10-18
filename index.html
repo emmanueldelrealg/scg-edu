@@ -1,0 +1,1944 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>SCG-Edu Gobierno del Estado</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Simulador didáctico de contabilidad gubernamental: pólizas, mayor, balanza, control presupuestal y estados financieros.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: barra institucional fija arriba, menú de módulos a la izquierda y área de trabajo
+   tipo formulario de sistema; en pantallas angostas el menú pasa a una franja desplazable. */
+:root {
+  --marino: #1F4E78;
+  --marino-osc: #163a5a;
+  --marino-claro: #e8eef5;
+  --fondo: #f3f5f8;
+  --papel: #ffffff;
+  --tinta: #1d2733;
+  --tenue: #5a6878;
+  --linea: #d3dbe4;
+  --linea-fuerte: #aab7c6;
+  --ok: #C6EFCE;   --ok-tinta: #1e6b32;
+  --parcial: #FFEB9C; --parcial-tinta: #7a5a00;
+  --error: #FFC7CE; --error-tinta: #9c0006;
+  --gris: #e4e8ed;  --gris-tinta: #55606c;
+  --foco: #f0a500;
+  --f-ui: "Source Sans 3", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  --t-xs: 0.78rem; --t-s: 0.875rem; --t-m: 1rem; --t-l: 1.2rem; --t-xl: 1.5rem; --t-xxl: 2.4rem;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--fondo); color: var(--tinta);
+  font-family: var(--f-ui); font-size: 15px; line-height: 1.45;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--marino);
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--foco); outline-offset: 1px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.2; }
+h2 { font-size: var(--t-xl); font-weight: 600; }
+h3 { font-size: var(--t-l); font-weight: 600; }
+p { margin: 0; }
+.num, .cod { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.num { text-align: right; white-space: nowrap; }
+.cod { white-space: nowrap; font-size: 0.86em; }
+.neg { color: var(--error-tinta); }
+.tenue { color: var(--tenue); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.etq { font-size: var(--t-xs); letter-spacing: 0.06em; text-transform: uppercase; color: var(--tenue); font-weight: 600; }
+
+/* ---------- Estructura ---------- */
+.barra {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  background: var(--marino); color: #fff;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 3px solid #c9a227;
+}
+.escudo {
+  width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c9a227;
+  display: grid; place-items: center; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.02em; flex: none;
+}
+.barra .ente { display: flex; flex-direction: column; min-width: 0; }
+.barra .ente b { font-size: var(--t-m); font-weight: 700; }
+.barra .ente span { font-size: var(--t-xs); opacity: 0.85; letter-spacing: 0.04em; text-transform: uppercase; }
+.barra .usuario { margin-left: auto; display: flex; gap: 12px; align-items: center; font-size: var(--t-s); flex-wrap: wrap; }
+.chip-modo { border: 1px solid rgba(255,255,255,0.5); border-radius: 3px; padding: 2px 8px; font-size: var(--t-xs); text-transform: uppercase; letter-spacing: 0.06em; }
+.btn-glosario { background: transparent; border: 1px solid rgba(255,255,255,0.6); color: #fff; border-radius: 3px; padding: 4px 10px; cursor: pointer; }
+.btn-glosario:hover { background: var(--marino-osc); }
+
+.marco { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: calc(100% - 60px); }
+.menu {
+  background: var(--papel); border-right: 1px solid var(--linea);
+  padding-block: 12px; display: flex; flex-direction: column; gap: 2px;
+}
+.menu a {
+  display: flex; gap: 10px; align-items: baseline; padding: 8px 16px; text-decoration: none; color: var(--tinta);
+  border-left: 4px solid transparent; font-size: var(--t-s);
+}
+.menu a .n { font-family: var(--f-num); font-size: var(--t-xs); color: var(--tenue); width: 1.2em; }
+.menu a:hover { background: var(--marino-claro); }
+.menu a[aria-current="page"] { border-left-color: var(--marino); background: var(--marino-claro); font-weight: 600; color: var(--marino); }
+.menu .sep { height: 1px; background: var(--linea); margin: 8px 16px; }
+.menu[hidden] + .area { grid-column: 1 / -1; }
+
+.area {
+  min-width: 0; padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 16px;
+}
+.ruta { font-size: var(--t-xs); color: var(--tenue); letter-spacing: 0.04em; text-transform: uppercase; }
+.encab { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; }
+
+@media (max-width: 900px) {
+  .marco { grid-template-columns: minmax(0, 1fr); }
+  .menu {
+    flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--linea);
+    padding-block: 0;
+  }
+  .menu a { border-left: 0; border-bottom: 3px solid transparent; white-space: nowrap; padding: 10px 12px; }
+  .menu a[aria-current="page"] { border-bottom-color: var(--marino); }
+  .menu .sep { display: none; }
+  .barra .usuario .quien { display: none; }
+  .barra { position: static; gap: 10px; }
+  .barra .ente span { display: none; }
+  .escudo { width: 28px; height: 28px; font-size: 0.7rem; }
+}
+
+/* ---------- Componentes ---------- */
+.panel { background: var(--papel); border: 1px solid var(--linea); border-radius: 4px; min-width: 0; }
+.panel > .cab { padding: 10px 14px; border-bottom: 1px solid var(--linea); display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: #f8fafc; }
+.panel > .cab h3 { font-size: var(--t-m); color: var(--marino); }
+.panel > .cuerpo { padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+.btn {
+  border: 1px solid var(--linea-fuerte); background: var(--papel); border-radius: 3px; padding: 7px 14px;
+  cursor: pointer; font-weight: 600; font-size: var(--t-s); display: inline-flex; gap: 6px; align-items: center;
+}
+.btn:hover:not(:disabled) { border-color: var(--marino); color: var(--marino); }
+.btn.prim { background: var(--marino); border-color: var(--marino); color: #fff; }
+.btn.prim:hover:not(:disabled) { background: var(--marino-osc); color: #fff; }
+.btn.peligro { color: var(--error-tinta); border-color: #e3a1a8; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.chico { padding: 3px 9px; font-size: var(--t-xs); }
+.acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.campo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.campo label { font-size: var(--t-xs); font-weight: 600; color: var(--tenue); text-transform: uppercase; letter-spacing: 0.05em; }
+.campo input, .campo select, .campo textarea {
+  border: 1px solid var(--linea-fuerte); border-radius: 3px; padding: 7px 9px; background: var(--papel); min-width: 0;
+}
+.campo .ro { border: 1px solid var(--linea); background: #f1f4f7; border-radius: 3px; padding: 7px 9px; min-height: 2.3em; }
+.filtros { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+
+.estado {
+  display: inline-flex; align-items: center; gap: 5px; border-radius: 3px; padding: 1px 8px;
+  font-size: var(--t-xs); font-weight: 700; letter-spacing: 0.03em; white-space: nowrap;
+}
+.estado::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.e-correcto { background: var(--ok); color: var(--ok-tinta); }
+.e-parcial { background: var(--parcial); color: var(--parcial-tinta); }
+.e-revisar { background: var(--error); color: var(--error-tinta); }
+.e-pendiente { background: var(--gris); color: var(--gris-tinta); }
+.e-capturado { background: var(--marino-claro); color: var(--marino); }
+
+.aviso { border-radius: 3px; padding: 9px 12px; font-size: var(--t-s); border: 1px solid; }
+.aviso.ok { background: var(--ok); color: var(--ok-tinta); border-color: #9fd7ab; }
+.aviso.adv { background: var(--parcial); color: var(--parcial-tinta); border-color: #e6cf6d; }
+.aviso.err { background: var(--error); color: var(--error-tinta); border-color: #e9a0a8; }
+.aviso.info { background: var(--marino-claro); color: var(--marino); border-color: #bccde0; }
+.aviso ul { margin: 4px 0 0; padding-left: 18px; }
+
+.tabla-cont { overflow-x: auto; max-width: 100%; }
+table.t { border-collapse: collapse; width: 100%; font-size: var(--t-s); }
+table.t th { background: var(--marino); color: #fff; font-weight: 600; text-align: left; padding: 7px 9px; font-size: var(--t-xs); letter-spacing: 0.04em; text-transform: uppercase; position: sticky; top: 0; }
+table.t th.num { text-align: right; }
+table.t td { padding: 6px 9px; border-bottom: 1px solid var(--linea); vertical-align: top; }
+table.t tbody tr:nth-child(even) td { background: #f9fbfd; }
+table.t tfoot td { font-weight: 700; border-top: 2px solid var(--marino); background: #eef3f8; }
+table.t tr.mayor td { font-weight: 600; }
+table.t tr.niv1 td { background: #e3ebf4; color: var(--marino); }
+table.t tr.alerta td { background: var(--error) !important; }
+table.t tr.clic { cursor: pointer; }
+table.t tr.clic:hover td { background: var(--marino-claro); }
+
+/* ---------- Tablero ---------- */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.kpi { background: var(--papel); border: 1px solid var(--linea); border-radius: 4px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.kpi b { font-size: var(--t-xl); font-family: var(--f-num); font-weight: 600; color: var(--marino); }
+.avance { height: 10px; background: var(--gris); border-radius: 5px; overflow: hidden; display: flex; }
+.avance span { display: block; height: 100%; }
+.leyenda { display: flex; gap: 10px; flex-wrap: wrap; }
+.ops { display: flex; flex-direction: column; }
+.op {
+  display: grid; grid-template-columns: 3.2em 6.5em minmax(0, 1fr) auto; gap: 12px; align-items: center;
+  padding: 9px 14px; border-bottom: 1px solid var(--linea); cursor: pointer; text-align: left;
+  background: var(--papel); border-left: 0; border-right: 0; border-top: 0; width: 100%;
+}
+.op:hover { background: var(--marino-claro); }
+.op .no { font-family: var(--f-num); font-weight: 600; color: var(--marino); }
+.op .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 640px) {
+  .op { grid-template-columns: 3em minmax(0, 1fr) auto; }
+  .op .fecha { display: none; }
+}
+
+/* ---------- Póliza ---------- */
+.poliza-enc { display: grid; grid-template-columns: 7em 9em 9em minmax(0, 1fr); gap: 12px; }
+@media (max-width: 700px) { .poliza-enc { grid-template-columns: 1fr 1fr; } .poliza-enc .concepto { grid-column: 1 / -1; } }
+.operacion-texto { background: #fffbea; border: 1px solid #ecdca0; border-radius: 3px; padding: 10px 12px; font-size: var(--t-m); }
+.pestanas { display: flex; gap: 2px; border-bottom: 2px solid var(--marino); flex-wrap: wrap; }
+.pestanas button {
+  border: 1px solid var(--linea); border-bottom: 0; background: #edf1f5; padding: 8px 16px; cursor: pointer;
+  border-radius: 4px 4px 0 0; font-weight: 600; font-size: var(--t-s); display: inline-flex; gap: 8px; align-items: center;
+}
+.pestanas button[aria-selected="true"] { background: var(--marino); color: #fff; border-color: var(--marino); }
+.pestanas .marca { font-size: var(--t-xs); font-weight: 700; }
+.grid-pol { width: 100%; border-collapse: collapse; font-size: var(--t-s); min-width: 640px; }
+.grid-pol th { background: #dfe7f0; color: var(--marino); text-align: left; font-size: var(--t-xs); text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 8px; }
+.grid-pol th.num { text-align: right; }
+.grid-pol td { border-bottom: 1px solid var(--linea); padding: 3px 4px; vertical-align: middle; }
+.grid-pol td.n { width: 2.4em; text-align: center; color: var(--tenue); font-family: var(--f-num); font-size: var(--t-xs); }
+.grid-pol input {
+  width: 100%; border: 1px solid transparent; background: transparent; padding: 6px 7px; border-radius: 2px;
+}
+.grid-pol input:hover { border-color: var(--linea); }
+.grid-pol input:focus { border-color: var(--marino); background: #fff; outline: none; box-shadow: 0 0 0 2px rgba(31,78,120,0.25); }
+.grid-pol input.cta { font-family: var(--f-num); width: 13.5em; }
+.grid-pol input.imp { font-family: var(--f-num); text-align: right; width: 10em; }
+.grid-pol td.nom { min-width: 14em; }
+.grid-pol .msg { color: var(--error-tinta); font-size: var(--t-xs); display: block; }
+.grid-pol tr.err td { background: #fff4f5; }
+.grid-pol tr.bien td { background: #f0fbf2; }
+.grid-pol tr.mal td { background: #fff4f5; }
+.grid-pol .mk { font-weight: 700; }
+.del { border: 0; background: transparent; color: var(--tenue); cursor: pointer; font-size: 1.1rem; padding: 2px 6px; border-radius: 2px; }
+.del:hover { color: var(--error-tinta); background: var(--error); }
+.totales {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 16px;
+  background: #eef3f8; border: 1px solid var(--linea); border-radius: 3px; padding: 10px 14px;
+}
+.totales div { display: flex; flex-direction: column; }
+.totales b { font-family: var(--f-num); font-size: var(--t-m); }
+.dif-mal b { color: var(--error-tinta); }
+.dif-bien b { color: var(--ok-tinta); }
+.pie-poliza { position: sticky; bottom: 0; background: var(--papel); border-top: 2px solid var(--marino); padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; z-index: 5; }
+
+.sugerencias {
+  position: absolute; z-index: 50; background: var(--papel); border: 1px solid var(--marino); border-radius: 3px;
+  box-shadow: 0 6px 18px rgba(20,40,70,0.18); max-height: 300px; overflow-y: auto; width: min(560px, calc(100vw - 32px));
+  font-size: var(--t-s);
+}
+.sugerencias div { padding: 6px 10px; cursor: pointer; display: grid; grid-template-columns: 11.5em minmax(0, 1fr) auto; gap: 8px; align-items: baseline; }
+.sugerencias div.act { background: var(--marino-claro); }
+.sugerencias div.mayor { color: var(--tenue); }
+.sugerencias .tag { font-size: 0.68rem; border: 1px solid var(--linea-fuerte); border-radius: 2px; padding: 0 4px; text-transform: uppercase; }
+.sugerencias .vacio { display: block; color: var(--tenue); cursor: default; }
+
+.pistas { display: flex; flex-direction: column; gap: 8px; }
+.pistas ol, .pistas ul { margin: 0; padding-left: 20px; }
+.confirmar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ---------- Cuenta T ---------- */
+.cuenta-t { max-width: 720px; width: 100%; }
+.cuenta-t .tit { text-align: center; font-weight: 700; border-bottom: 3px solid var(--tinta); padding-bottom: 6px; }
+.cuenta-t .cols { display: grid; grid-template-columns: 1fr 1fr; }
+.cuenta-t .col { padding: 6px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cuenta-t .col + .col { border-left: 3px solid var(--tinta); }
+.cuenta-t .mov { display: flex; justify-content: space-between; gap: 8px; font-family: var(--f-num); font-size: var(--t-s); }
+.cuenta-t .mov .ref { color: var(--tenue); }
+.cuenta-t .sum { border-top: 1px solid var(--tinta); margin-top: 6px; padding-top: 4px; font-weight: 700; }
+.cuenta-t .saldo { text-align: center; margin-top: 10px; font-weight: 700; }
+
+/* ---------- Estados ---------- */
+.estados { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 430px), 1fr)); gap: 16px; align-items: start; }
+.ef { width: 100%; border-collapse: collapse; font-size: var(--t-s); }
+.ef td { padding: 5px 4px; border-bottom: 1px dotted var(--linea); }
+.ef tr.sub td { font-weight: 700; border-bottom: 1px solid var(--tinta); }
+.ef tr.tot td { font-weight: 700; border-top: 2px solid var(--tinta); border-bottom: 3px double var(--tinta); }
+.ef tr.sec td { font-weight: 700; color: var(--marino); padding-top: 10px; border-bottom: 0; }
+.ef td.ind { padding-left: 18px; }
+.control { font-weight: 700; }
+.control.si { color: var(--ok-tinta); }
+.control.no { color: var(--error-tinta); }
+
+/* ---------- Inicio y resultados ---------- */
+.portada { max-width: 820px; display: flex; flex-direction: column; gap: 16px; }
+.portada .intro { font-size: var(--t-m); max-width: 65ch; }
+.form-ini { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.modos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.modo { border: 2px solid var(--linea); border-radius: 4px; padding: 12px 14px; cursor: pointer; display: flex; gap: 10px; background: var(--papel); }
+.modo:has(input:checked) { border-color: var(--marino); background: var(--marino-claro); }
+.modo input { margin-top: 4px; }
+.modo b { display: block; }
+.califica { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+.califica .grande { font-family: var(--f-num); font-size: var(--t-xxl); font-weight: 600; color: var(--marino); line-height: 1; }
+.checks { display: flex; flex-direction: column; gap: 4px; }
+
+/* ---------- Glosario ---------- */
+.glosario {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100%); background: var(--papel); z-index: 60;
+  border-left: 3px solid var(--marino); box-shadow: -8px 0 24px rgba(20,40,70,0.2); overflow-y: auto;
+  padding-block: calc(16px + env(safe-area-inset-top, 0px)) calc(24px + env(safe-area-inset-bottom, 0px));
+  padding-left: 18px; padding-right: max(18px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 14px;
+}
+.glosario h3 { color: var(--marino); font-size: var(--t-m); border-bottom: 1px solid var(--linea); padding-bottom: 4px; }
+.glosario table { width: 100%; border-collapse: collapse; font-size: var(--t-s); }
+.glosario td { padding: 4px 4px; border-bottom: 1px dotted var(--linea); vertical-align: top; }
+.flujo { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: var(--t-xs); }
+.flujo span { background: var(--marino-claro); color: var(--marino); border-radius: 3px; padding: 2px 6px; font-weight: 600; }
+.flujo i { color: var(--tenue); font-style: normal; }
+
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  background: var(--tinta); color: #fff; padding: 10px 18px; border-radius: 4px; z-index: 70; font-size: var(--t-s);
+  max-width: calc(100% - 32px);
+}
+textarea.json { width: 100%; min-height: 160px; font-family: var(--f-num); font-size: var(--t-xs); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .toast { animation: sube 0.18s ease-out; }
+  @keyframes sube { from { transform: translate(-50%, 8px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+}
+@media print {
+  .barra, .menu, .no-print, .glosario, .pie-poliza { display: none !important; }
+  .marco { display: block; }
+  body { background: #fff; }
+}
+
+</style>
+<header class="barra">
+  <div class="escudo" aria-hidden="true">GE</div>
+  <div class="ente"><b>Gobierno del Estado – Ejercicio 2026</b><span>Sistema de Contabilidad Gubernamental · SCG-Edu</span></div>
+  <div class="usuario"><span id="usuario"></span><button class="btn-glosario" id="btn-glosario" type="button">Glosario</button></div>
+</header>
+<div class="marco">
+  <nav class="menu" id="menu" aria-label="Módulos"></nav>
+  <main class="area" id="area"></main>
+</div>
+<aside class="glosario" id="glosario" tabindex="-1" aria-label="Glosario" hidden></aside>
+<script>
+window.SCG_DATA = {"catalogo":[{"c":"100000000000","d":"ACTIVO","det":false,"nat":"D","niv":1},{"c":"110000000000","d":"ACTIVO CIRCULANTE","det":false,"nat":"D","niv":2},{"c":"111000000000","d":"EFECTIVO Y EQUIVALENTES","det":false,"nat":"D","niv":3},{"c":"111100000000","d":"EFECTIVO","det":false,"nat":"D","niv":4},{"c":"111110000000","d":"FONDOS","det":false,"nat":"D","niv":5},{"c":"111110010000","d":"CAJA","det":true,"nat":"D","niv":6},{"c":"111110020000","d":"CAJA CHICA","det":true,"nat":"D","niv":6},{"c":"111200000000","d":"BANCOS/TESORERÍA","det":false,"nat":"D","niv":4},{"c":"111210000000","d":"BANCOS/TESORERÍA EN INSTITUCIONES BANCARIAS","det":false,"nat":"D","niv":5},{"c":"111210010000","d":"BANCOS/TESORERÍA BANAMEX","det":false,"nat":"D","niv":6},{"c":"111210010001","d":"1064-BNMEX 47570005541/ISN","det":true,"nat":"D","niv":7},{"c":"111210020000","d":"BANCOS/TESORERÍA BANCOMER","det":false,"nat":"D","niv":6},{"c":"111210020001","d":"076-BCMER 00445639913/PROVEED. CHEQ. ELE","det":true,"nat":"D","niv":7},{"c":"111210030000","d":"BANCOS/TESORERÍA SANTANDER","det":false,"nat":"D","niv":6},{"c":"111210030001","d":"042-STANDER 014580160000002331/CTA GRAL","det":true,"nat":"D","niv":7},{"c":"112000000000","d":"DERECHOS A RECIBIR EFECTIVO O EQUIVALENTES","det":false,"nat":"D","niv":3},{"c":"112100000000","d":"INVERSIONES FINANCIERAS DE CORTO PLAZO","det":false,"nat":"D","niv":4},{"c":"112110000000","d":"INVERSIONES A CORTO PLAZO","det":false,"nat":"D","niv":5},{"c":"112110010000","d":"TÍTULOS Y VALORES A CORTO PLAZO","det":true,"nat":"D","niv":6},{"c":"112200000000","d":"CUENTAS POR COBRAR A CORTO PLAZO","det":false,"nat":"D","niv":4},{"c":"112210000000","d":"CUENTAS POR COBRAR A CORTO PLAZO","det":false,"nat":"D","niv":5},{"c":"112210010000","d":"CUENTAS POR COBRAR POR VENTA DE BIENES Y PRESTACIÓN DE SERVICIOS","det":true,"nat":"D","niv":6},{"c":"112300000000","d":"DEUDORES DIVERSOS POR COBRAR A CORTO PLAZO","det":false,"nat":"D","niv":4},{"c":"112310000000","d":"DEUDORES DIVERSOS A CORTO PLAZO","det":false,"nat":"D","niv":5},{"c":"112310010000","d":"DEUDORES DIVERSOS (CHEQUES DEVUELTOS)","det":true,"nat":"D","niv":6},{"c":"112310020000","d":"GASTOS POR COMPROBAR","det":true,"nat":"D","niv":6},{"c":"113000000000","d":"DERECHOS A RECIBIR BIENES O SERVICIOS","det":false,"nat":"D","niv":3},{"c":"113100000000","d":"ANTICIPO A PROVEEDORES POR ADQUISICIÓN DE BIENES Y PRESTACIÓN DE SERVICIOS A CORTO PLAZO","det":false,"nat":"D","niv":4},{"c":"113110000000","d":"ANTICIPO A PROVEEDORES DE BIENES Y SERVICIOS A CORTO PLAZO","det":true,"nat":"D","niv":5},{"c":"113400000000","d":"ANTICIPO A CONTRATISTAS POR OBRAS PÚBLICAS A CORTO PLAZO","det":false,"nat":"D","niv":4},{"c":"113410000000","d":"ANTICIPO A CONTRATISTAS DE OBRA A CORTO PLAZO","det":true,"nat":"D","niv":5},{"c":"120000000000","d":"ACTIVO NO CIRCULANTE","det":false,"nat":"D","niv":2},{"c":"121300000000","d":"FIDEICOMISOS, MANDATOS Y CONTRATOS ANÁLOGOS","det":false,"nat":"D","niv":4},{"c":"121310000000","d":"FIDEICOMISOS, MANDATOS Y CONTRATOS ANÁLOGOS DEL PODER EJECUTIVO","det":false,"nat":"D","niv":5},{"c":"121310010000","d":"FIDEICOMISOS SIN ESTRUCTURA","det":false,"nat":"D","niv":6},{"c":"121310010004","d":"INVERSIONES EN FIDEICOMISOS DEL PODER EJECUTIVO","det":true,"nat":"D","niv":7},{"c":"123000000000","d":"BIENES INMUEBLES, INFRAESTRUCTURA Y CONSTRUCCIONES EN PROCESO","det":false,"nat":"D","niv":3},{"c":"123100000000","d":"TERRENOS","det":false,"nat":"D","niv":4},{"c":"123110000000","d":"TERRENOS","det":false,"nat":"D","niv":5},{"c":"123110010000","d":"TERRENOS","det":true,"nat":"D","niv":6},{"c":"123200000000","d":"VIVIENDAS","det":false,"nat":"D","niv":4},{"c":"123210000000","d":"VIVIENDAS","det":false,"nat":"D","niv":5},{"c":"123210010000","d":"EDIFICACIÓN HABITACIONAL","det":true,"nat":"D","niv":6},{"c":"123300000000","d":"EDIFICIOS NO HABITACIONALES","det":false,"nat":"D","niv":4},{"c":"123310000000","d":"EDIFICIOS NO HABITACIONALES","det":false,"nat":"D","niv":5},{"c":"123310010000","d":"EDIFICIOS NO HABITACIONALES","det":true,"nat":"D","niv":6},{"c":"123400000000","d":"INFRAESTRUCTURA","det":false,"nat":"D","niv":4},{"c":"123410000000","d":"INFRAESTRUCTURA EN CARRETERAS","det":false,"nat":"D","niv":5},{"c":"123410010000","d":"INFRAESTRUCTURA EN CARRETERAS","det":true,"nat":"D","niv":6},{"c":"123500000000","d":"CONSTRUCCIONES EN PROCESO BIENES DOMINIO PÚBLICO","det":false,"nat":"D","niv":4},{"c":"123510000000","d":"EDIFICACIÓN HABITACIONAL EN PROCESO EN BIENES DE DOMINIO PÚBLICO","det":false,"nat":"D","niv":5},{"c":"123510010000","d":"EDIFICACIÓN HABITACIONAL EN PROCESO EN BIENES DE DOMINIO PÚBLICO","det":true,"nat":"D","niv":6},{"c":"124000000000","d":"BIENES MUEBLES","det":false,"nat":"D","niv":3},{"c":"124100000000","d":"MOBILIARIO Y EQUIPO DE ADMINISTRACIÓN","det":false,"nat":"D","niv":4},{"c":"124110000000","d":"MUEBLES DE OFICINA Y ESTANTERÍA","det":false,"nat":"D","niv":5},{"c":"124110010000","d":"MUEBLES DE OFICINA Y ESTANTERÍA","det":true,"nat":"D","niv":6},{"c":"124120000000","d":"MUEBLES, EXCEPTO DE OFICINA Y ESTANTERÍA","det":false,"nat":"D","niv":5},{"c":"124120010000","d":"MUEBLES, EXCEPTO DE OFICINA Y ESTANTERÍA","det":true,"nat":"D","niv":6},{"c":"124130000000","d":"EQUIPO DE CÓMPUTO Y TECNOLOGÍAS DE LA INFORMACIÓN","det":false,"nat":"D","niv":5},{"c":"124130010000","d":"EQUIPO DE CÓMPUTO Y TECNOLOGÍAS DE LA INFORMACIÓN","det":true,"nat":"D","niv":6},{"c":"124400000000","d":"EQUIPO DE TRANSPORTE","det":false,"nat":"D","niv":4},{"c":"124410000000","d":"VEHÍCULOS Y EQUIPO TERRESTRE","det":false,"nat":"D","niv":5},{"c":"124410010000","d":"VEHÍCULOS Y EQUIPO TERRESTRE","det":true,"nat":"D","niv":6},{"c":"126000000000","d":"DEPRECIACIÓN, DETERIORO Y AMORTIZACIÓN ACUMULADA DE BIENES","det":false,"nat":"A","niv":3},{"c":"126100000000","d":"DEPRECIACIÓN ACUMULADA BIENES INMUEBLES","det":false,"nat":"A","niv":4},{"c":"126110000000","d":"DEPRECIACIÓN ACUMULADA DE BIENES INMUEBLES","det":false,"nat":"A","niv":5},{"c":"126110010000","d":"DEPRECIACIÓN ACUMULADA DE VIVIENDAS","det":true,"nat":"A","niv":6},{"c":"126110020000","d":"DEPRECIACIÓN ACUMULADA DE EDIFICIOS NO HABITACIONALES","det":true,"nat":"A","niv":6},{"c":"126300000000","d":"DEPRECIACIÓN ACUMULADA DE BIENES MUEBLES","det":false,"nat":"A","niv":4},{"c":"126310000000","d":"DEPRECIACIÓN ACUMULADA DE MOBILIARIO Y EQUIPO DE ADMINISTRACIÓN","det":false,"nat":"A","niv":5},{"c":"126310010000","d":"DEPRECIACIÓN ACUMULADA DE MUEBLES DE OFICINA Y ESTANTERÍA","det":true,"nat":"A","niv":6},{"c":"126310020000","d":"DEPRECIACIÓN ACUMULADA DE MUEBLES, EXCEPTO DE OFICINA Y ESTANTERÍA","det":true,"nat":"A","niv":6},{"c":"126310030000","d":"DEPRECIACIÓN ACUMULADA DE EQUIPO DE CÓMPUTO Y TECNOLOGÍAS DE LA INFORMACIÓN","det":true,"nat":"A","niv":6},{"c":"126340000000","d":"DEPRECIACIÓN ACUMULADA DE EQUIPO DE TRANSPORTE","det":false,"nat":"A","niv":5},{"c":"126340010000","d":"DEPRECIACIÓN ACUMULADA DE AUTOMÓVILES Y EQUIPO TERRESTRE","det":true,"nat":"A","niv":6},{"c":"200000000000","d":"PASIVO","det":false,"nat":"A","niv":1},{"c":"210000000000","d":"PASIVO CIRCULANTE","det":false,"nat":"A","niv":2},{"c":"211000000000","d":"CUENTAS POR PAGAR A CORTO PLAZO","det":false,"nat":"A","niv":3},{"c":"211100000000","d":"SERVICIOS PERSONALES POR PAGAR A CORTO PLAZO","det":false,"nat":"A","niv":4},{"c":"211110000000","d":"SERVICIOS PERSONALES POR PAGAR A CORTO PLAZO","det":false,"nat":"A","niv":5},{"c":"211110010000","d":"REMUNERACIÓN POR PAGAR PERSONAL","det":true,"nat":"A","niv":6},{"c":"211200000000","d":"PROVEEDORES POR PAGAR CORTO PLAZO","det":false,"nat":"A","niv":4},{"c":"211210000000","d":"PROVEEDORES POR PAGAR A CORTO PLAZO","det":false,"nat":"A","niv":5},{"c":"211210010000","d":"PROVEEDORES POR ADQUISICIÓN DE BIENES Y SERVICIOS POR PAGAR A CORTO PLAZO","det":true,"nat":"A","niv":6},{"c":"211300000000","d":"CONTRATISTAS POR OBRAS PÚBLICAS POR PAGAR A CORTO PLAZO","det":false,"nat":"A","niv":4},{"c":"211310000000","d":"CONTRATISTAS POR PAGAR A CORTO PLAZO","det":true,"nat":"A","niv":5},{"c":"211400000000","d":"PARTICIPACIONES Y APORTACIONES POR PAGAR A CORTO PLAZO","det":false,"nat":"A","niv":4},{"c":"211410000000","d":"PARTICIPACIONES POR PAGAR A CORTO PLAZO","det":true,"nat":"A","niv":5},{"c":"211500000000","d":"TRANSFERENCIAS OTORGADAS POR PAGAR A CORTO PLAZO","det":false,"nat":"A","niv":4},{"c":"211510000000","d":"TRANSFERENCIAS POR PAGAR A CORTO PLAZO","det":true,"nat":"A","niv":5},{"c":"211700000000","d":"RETENCIONES Y CONTRIBUCIONES POR PAGAR A CORTO PLAZO","det":false,"nat":"A","niv":4},{"c":"211710000000","d":"RETENCIONES Y CONTRIBUCIONES POR PAGAR A CORTO PLAZO","det":false,"nat":"A","niv":5},{"c":"211710010000","d":"RETENCIONES IMPUESTOS POR PAGAR A CORTO PLAZO","det":true,"nat":"A","niv":6},{"c":"211900000000","d":"OTRAS CUENTAS POR PAGAR A CORTO PLAZO","det":false,"nat":"A","niv":4},{"c":"211990000000","d":"OTRAS CUENTAS POR PAGAR A CORTO PLAZO","det":false,"nat":"A","niv":5},{"c":"211990010000","d":"ACREEDORES DIVERSOS VARIOS","det":false,"nat":"A","niv":6},{"c":"211990010999","d":"ACREEDORES DIVERSOS VARIOS","det":true,"nat":"A","niv":7},{"c":"300000000000","d":"HACIENDA PÚBLICA / PATRIMONIO","det":false,"nat":"A","niv":1},{"c":"310000000000","d":"HACIENDA PÚBLICA / PATRIMONIO CONTRIBUIDO","det":false,"nat":"A","niv":2},{"c":"311000000000","d":"APORTACIONES","det":false,"nat":"A","niv":3},{"c":"311100000000","d":"PATRIMONIO CORRIENTE DE OPERACIÓN","det":false,"nat":"A","niv":4},{"c":"311110000000","d":"CUENTAS POR COBRAR Y POR PAGAR DE EJERCICIOS ANTERIORES","det":true,"nat":"A","niv":5},{"c":"312000000000","d":"DONACIONES DE CAPITAL","det":false,"nat":"A","niv":3},{"c":"312100000000","d":"DONACIONES DE CAPITAL","det":true,"nat":"A","niv":4},{"c":"313000000000","d":"ACTUALIZACIÓN DE LA HACIENDA PÚBLICA / PATRIMONIO","det":false,"nat":"A","niv":3},{"c":"313100000000","d":"BIENES LOCALIZADOS EN INVENTARIO FÍSICO","det":true,"nat":"A","niv":4},{"c":"320000000000","d":"HACIENDA PÚBLICA / PATRIMONIO GENERADO","det":false,"nat":"A","niv":2},{"c":"321000000000","d":"RESULTADO DEL EJERCICIO (AHORRO / DESAHORRO)","det":true,"nat":"A","niv":3},{"c":"322000000000","d":"RESULTADOS EJERCICIOS ANTERIORES","det":false,"nat":"A","niv":3},{"c":"322100000000","d":"RESULTADO EJERCICIOS ANTERIORES","det":true,"nat":"A","niv":4},{"c":"323000000000","d":"REVALÚOS","det":false,"nat":"A","niv":3},{"c":"323100000000","d":"REVALÚO DE BIENES INMUEBLES","det":true,"nat":"A","niv":4},{"c":"325000000000","d":"RECTIFICACIONES DE RESULTADOS DE EJERCICIOS ANTERIORES","det":false,"nat":"A","niv":3},{"c":"325200000000","d":"CAMBIOS POR ERRORES CONTABLES","det":true,"nat":"A","niv":4},{"c":"400000000000","d":"INGRESOS Y OTROS BENEFICIOS","det":false,"nat":"A","niv":1},{"c":"410000000000","d":"INGRESOS DE GESTIÓN","det":false,"nat":"A","niv":2},{"c":"411000000000","d":"IMPUESTOS","det":false,"nat":"A","niv":3},{"c":"411100000000","d":"IMPUESTOS SOBRE LOS INGRESOS","det":false,"nat":"A","niv":4},{"c":"411110000000","d":"IMPUESTO POR OBTENCIÓN DE PREMIOS","det":true,"nat":"A","niv":5},{"c":"412000000000","d":"CUOTAS Y APORTACIONES DE SEGURIDAD SOCIAL","det":false,"nat":"A","niv":3},{"c":"412100000000","d":"APORTACIONES PARA FONDOS DE VIVIENDA","det":false,"nat":"A","niv":4},{"c":"412200000000","d":"CUOTAS DE SEGURIDAD SOCIAL","det":false,"nat":"A","niv":4},{"c":"412300000000","d":"CUOTAS DE AHORRO PARA EL RETIRO","det":false,"nat":"A","niv":4},{"c":"413000000000","d":"CONTRIBUCIONES DE MEJORAS","det":false,"nat":"A","niv":3},{"c":"413100000000","d":"CONTRIBUCIONES DE MEJORAS POR OBRAS PÚBLICAS","det":false,"nat":"A","niv":4},{"c":"413200000000","d":"CONTRIBUCIONES DE MEJORAS NO COMPRENDIDAS EN LA LEY DE INGRESOS VIGENTE, CAUSADAS EN EJERCICIOS FISCALES ANTERIORES PENDIENTES DE LIQUIDACIÓN  O PAGO","det":false,"nat":"A","niv":4},{"c":"414000000000","d":"DERECHOS","det":false,"nat":"A","niv":3},{"c":"414100000000","d":"DERECHOS POR EL USO, GOCE, APROVECHAMIENTO O EXPLOTACIÓN DE BIENES DE DOMINIO PÚBLICO","det":false,"nat":"A","niv":4},{"c":"414110000000","d":"DERECHOS DE USO DE ECOVÍA","det":true,"nat":"A","niv":5},{"c":"414120000000","d":"PEAJES","det":true,"nat":"A","niv":5},{"c":"415000000000","d":"PRODUCTOS","det":false,"nat":"A","niv":3},{"c":"415100000000","d":"PRODUCTOS","det":false,"nat":"A","niv":4},{"c":"415110000000","d":"PRODUCTOS H.TRIBUNAL SUPERIOR DE JUSTICIA","det":true,"nat":"A","niv":5},{"c":"416000000000","d":"APROVECHAMIENTOS","det":false,"nat":"A","niv":3},{"c":"416200000000","d":"MULTAS","det":false,"nat":"A","niv":4},{"c":"416210000000","d":"MULTAS","det":true,"nat":"A","niv":5},{"c":"416220000000","d":"MULTAS Y SANCIONES A CONTRATISTAS OBRA EN PROCESO","det":true,"nat":"A","niv":5},{"c":"416900000000","d":"OTROS APROVECHAMIENTOS","det":false,"nat":"A","niv":4},{"c":"416910000000","d":"GANANCIA POR VENTA DE ACTIVO FIJO","det":true,"nat":"A","niv":5},{"c":"417000000000","d":"INGRESOS POR VENTA DE BIENES Y PRESTACIÓN DE SERVICIOS","det":false,"nat":"A","niv":3},{"c":"417100000000","d":"INGRESOS POR VENTA DE BIENES Y PRESTACIÓN DE SERVICIOS DE INSTITUCIONES PÚBLICAS DE SEGURIDAD SOCIAL","det":false,"nat":"A","niv":4},{"c":"420000000000","d":"PARTICIPACIONES, APORTACIONES, CONVENIOS, INCENTIVOS DERIVADOS DE LA COLABORACIÓN FISCAL, FONDOS DISTINTOS DE APORTACIONES, TRANSFERENCIAS, ASIGNACIONES, SUBSIDIOS Y SUBVENCIONES, Y PENSIONES Y JUBILACIONES","det":false,"nat":"A","niv":2},{"c":"421000000000","d":"PARTICIPACIONES, APORTACIONES, CONVENIOS, INCENTIVOS DERIVADOS DE LA COLABORACIÓN FISCAL Y FONDOS DISTINTOS DE APORTACIONES","det":false,"nat":"A","niv":3},{"c":"421100000000","d":"PARTICIPACIONES","det":false,"nat":"A","niv":4},{"c":"421110000000","d":"FONDO GENERAL DE PARTICIPACIONES","det":true,"nat":"A","niv":5},{"c":"421200000000","d":"APORTACIONES","det":false,"nat":"A","niv":4},{"c":"421210000000","d":"FONDO DE APORTACIONES PARA LA NÓMINA EDUCATIVA Y GASTO OPERATIVO","det":true,"nat":"A","niv":5},{"c":"421300000000","d":"CONVENIOS","det":false,"nat":"A","niv":4},{"c":"421310000000","d":"CONVENIOS DE PROTECCIÓN SOCIAL EN SALUD","det":true,"nat":"A","niv":5},{"c":"421400000000","d":"INCENTIVOS DERIVADOS DE LA COLABORACIÓN FISCAL","det":false,"nat":"A","niv":4},{"c":"421410000000","d":"TENENCIA O USO DE VEHÍCULOS","det":true,"nat":"A","niv":5},{"c":"422000000000","d":"TRANSFERENCIAS, ASIGNACIONES, SUBSIDIOS Y SUBVENCIONES, Y PENSIONES Y JUBILACIONES","det":false,"nat":"A","niv":3},{"c":"422100000000","d":"TRANSFERENCIAS Y ASIGNACIONES","det":false,"nat":"A","niv":4},{"c":"422110000000","d":"TRANSFERENCIAS Y ASIGNACIONES","det":true,"nat":"A","niv":5},{"c":"500000000000","d":"GASTOS Y OTRAS PÉRDIDAS","det":false,"nat":"D","niv":1},{"c":"510000000000","d":"GASTOS DE FUNCIONAMIENTO","det":false,"nat":"D","niv":2},{"c":"511000000000","d":"SERVICIOS PERSONALES","det":false,"nat":"D","niv":3},{"c":"511100000000","d":"REMUNERACIONES PERSONAL CARÁCTER PERMANENTE","det":false,"nat":"D","niv":4},{"c":"511110000000","d":"REMUNERACIONES AL PERSONAL PERMANENTE","det":false,"nat":"D","niv":5},{"c":"511110010000","d":"DIETAS","det":true,"nat":"D","niv":6},{"c":"511110020000","d":"HABERES","det":true,"nat":"D","niv":6},{"c":"511110030000","d":"SUELDOS BASE PERSONAL PERMANENTE","det":true,"nat":"D","niv":6},{"c":"512000000000","d":"MATERIALES Y SUMINISTROS","det":false,"nat":"D","niv":3},{"c":"512100000000","d":"MATERIALES DE ADMINISTRACIÓN, EMISIÓN DE DOCUMENTOS Y ARTÍCULOS OFICIALES","det":false,"nat":"D","niv":4},{"c":"512110000000","d":"MATERIALES Y ARTÍCULOS","det":false,"nat":"D","niv":5},{"c":"512110010000","d":"MATERIALES, ÚTILES Y EQUIPOS MENORES DE OFICINA","det":true,"nat":"D","niv":6},{"c":"513000000000","d":"SERVICIOS GENERALES","det":false,"nat":"D","niv":3},{"c":"513100000000","d":"SERVICIOS BÁSICOS","det":false,"nat":"D","niv":4},{"c":"513110000000","d":"SERVICIOS BÁSICOS","det":false,"nat":"D","niv":5},{"c":"513110010000","d":"ENERGÍA ELÉCTRICA","det":true,"nat":"D","niv":6},{"c":"513110020000","d":"GAS","det":true,"nat":"D","niv":6},{"c":"513110030000","d":"AGUA","det":true,"nat":"D","niv":6},{"c":"513110050000","d":"TELEFONÍA CELULAR","det":true,"nat":"D","niv":6},{"c":"513110060000","d":"SERVICIOS PROFESIONALES, CIENTÍFICOS Y TÉCNICOS PROFESIONALES","det":true,"nat":"D","niv":6},{"c":"513200000000","d":"SERVICIOS DE ARRENDAMIENTO","det":false,"nat":"D","niv":4},{"c":"513210000000","d":"ARRENDAMIENTOS","det":false,"nat":"D","niv":5},{"c":"513210010000","d":"ARRENDAMIENTO DE TERRENOS","det":true,"nat":"D","niv":6},{"c":"513210020000","d":"ARRENDAMIENTO DE EDIFICIOS","det":true,"nat":"D","niv":6},{"c":"513210030000","d":"ARRENDAMIENTO DE MOBILIARIO Y EQUIPO DE ADMINISTRACIÓN, EDUCACIONAL Y RECREATIVO","det":true,"nat":"D","niv":6},{"c":"513210040000","d":"ARRENDAMIENTO DE EQUIPO E INSTRUMENTAL MÉDICO Y DE LABORATORIO","det":true,"nat":"D","niv":6},{"c":"513210050000","d":"ARRENDAMIENTO DE EQUIPO DE TRANSPORTE","det":true,"nat":"D","niv":6},{"c":"513700000000","d":"SERVICIOS DE TRASLADO Y VIÁTICOS","det":false,"nat":"D","niv":4},{"c":"513710000000","d":"TRASLADO Y VIÁTICOS","det":false,"nat":"D","niv":5},{"c":"513710010000","d":"PASAJES AÉREOS","det":true,"nat":"D","niv":6},{"c":"513710020000","d":"PASAJES TERRESTRES","det":true,"nat":"D","niv":6},{"c":"520000000000","d":"TRANSFERENCIAS, ASIGNACIONES, SUBSIDIOS Y OTRAS AYUDAS","det":false,"nat":"D","niv":2},{"c":"521000000000","d":"TRANSFERENCIAS INTERNAS Y ASIGNACIONES SECTOR PÚBLICO","det":false,"nat":"D","niv":3},{"c":"521100000000","d":"ASIGNACIONES AL SECTOR PÚBLICO","det":false,"nat":"D","niv":4},{"c":"521110000000","d":"ASIGNACIONES AL SECTOR PÚBLICO","det":false,"nat":"D","niv":5},{"c":"521110010000","d":"ASIGNACIONES PRESUPUESTARIAS AL PODER EJECUTIVO","det":true,"nat":"D","niv":6},{"c":"521110020000","d":"ASIGNACIONES PRESUPUESTARIAS AL PODER LEGISLATIVO","det":true,"nat":"D","niv":6},{"c":"521110030000","d":"ASIGNACIONES PRESUPUESTARIAS AL PODER JUDICIAL","det":true,"nat":"D","niv":6},{"c":"530000000000","d":"PARTICIPACIONES Y APORTACIONES","det":false,"nat":"D","niv":2},{"c":"531000000000","d":"PARTICIPACIONES","det":false,"nat":"D","niv":3},{"c":"531100000000","d":"PARTICIPACIONES DE LA FEDERACIÓN A ENTIDADES FEDERATIVAS Y MUNICIPIOS","det":false,"nat":"D","niv":4},{"c":"531110000000","d":"PARTICIPACIONES DE LA FEDERACIÓN","det":false,"nat":"D","niv":5},{"c":"531110010000","d":"FONDO GENERAL DE PARTICIPACIONES","det":true,"nat":"D","niv":6},{"c":"531110020000","d":"FONDO DE FOMENTO MUNICIPAL","det":true,"nat":"D","niv":6},{"c":"531200000000","d":"PARTICIPACIONES DE ENTIDADES FEDERATIVAS A MUNICIPIOS","det":false,"nat":"D","niv":4},{"c":"531210000000","d":"PARTICIPACIONES DE ENTIDADES FEDERATIVAS","det":false,"nat":"D","niv":5},{"c":"531210010000","d":"PARTICIPACIONES DE ENTIDADES FEDERATIVAS A MUNICIPIOS","det":true,"nat":"D","niv":6},{"c":"532000000000","d":"APORTACIONES","det":false,"nat":"D","niv":3},{"c":"532100000000","d":"APORTACIONES DE LA FEDERACIÓN A ENTIDADES FEDERATIVAS Y MUNICIPIOS","det":false,"nat":"D","niv":4},{"c":"532110000000","d":"APORTACIONES DE LA FEDERACIÓN","det":false,"nat":"D","niv":5},{"c":"532110010000","d":"APORTACIONES DE LA FEDERACIÓN A ENTIDADES FEDERATIVAS","det":true,"nat":"D","niv":6},{"c":"532110020000","d":"APORTACIONES DE LA FEDERACIÓN A MUNICIPIOS","det":true,"nat":"D","niv":6},{"c":"532200000000","d":"APORTACIONES DE ENTIDADES FEDERATIVAS A MUNICIPIOS","det":false,"nat":"D","niv":4},{"c":"532210000000","d":"APORTACIONES DE ENTIDADES FEDERATIVAS","det":false,"nat":"D","niv":5},{"c":"532210010000","d":"APORTACIONES DE ENTIDADES FEDERATIVAS A MUNICIPIOS","det":true,"nat":"D","niv":6},{"c":"540000000000","d":"INTERESES, COMISIONES Y OTROS GASTOS DE LA DEUDA PÚBLICA","det":false,"nat":"D","niv":2},{"c":"541000000000","d":"INTERESES DE LA DEUDA PÚBLICA","det":false,"nat":"D","niv":3},{"c":"541100000000","d":"INTERESES DE LA DEUDA PÚBLICA INTERNA","det":false,"nat":"D","niv":4},{"c":"541110000000","d":"INTERESES DEUDA INTERNA","det":false,"nat":"D","niv":5},{"c":"541110010000","d":"INTERESES DE LA DEUDA INTERNA CON INSTITUCIONES DE CRÉDITO","det":true,"nat":"D","niv":6},{"c":"541200000000","d":"INTERESES DE LA DEUDA PÚBLICA EXTERNA","det":false,"nat":"D","niv":4},{"c":"541210000000","d":"INTERESES DEUDA EXTERNA","det":false,"nat":"D","niv":5},{"c":"541210010000","d":"INTERESES DE LA DEUDA EXTERNA CON INSTITUCIONES DE CRÉDITO","det":true,"nat":"D","niv":6},{"c":"542000000000","d":"COMISIONES DE LA DEUDA PÚBLICA","det":false,"nat":"D","niv":3},{"c":"542100000000","d":"COMISIONES DE LA DEUDA PÚBLICA INTERNA","det":false,"nat":"D","niv":4},{"c":"542110000000","d":"COMISIONES DEUDA INTERNA","det":false,"nat":"D","niv":5},{"c":"542110010000","d":"COMISIONES DE LA DEUDA PÚBLICA INTERNA","det":true,"nat":"D","niv":6},{"c":"542200000000","d":"COMISIONES DE LA DEUDA PÚBLICA EXTERNA","det":false,"nat":"D","niv":4},{"c":"542210000000","d":"COMISIONES DEUDA EXTERNA","det":false,"nat":"D","niv":5},{"c":"542210010000","d":"COMISIONES DE LA DEUDA PÚBLICA EXTERNA","det":true,"nat":"D","niv":6},{"c":"543000000000","d":"GASTOS DE LA DEUDA PÚBLICA","det":false,"nat":"D","niv":3},{"c":"543100000000","d":"GASTOS DE LA DEUDA PÚBLICA INTERNA","det":false,"nat":"D","niv":4},{"c":"543110000000","d":"GASTOS DEUDA INTERNA","det":false,"nat":"D","niv":5},{"c":"543110010000","d":"GASTOS DE LA DEUDA PÚBLICA INTERNA","det":true,"nat":"D","niv":6},{"c":"543200000000","d":"GASTOS DE LA DEUDA PÚBLICA EXTERNA","det":false,"nat":"D","niv":4},{"c":"543210000000","d":"GASTOS DEUDA EXTERNA","det":false,"nat":"D","niv":5},{"c":"543210010000","d":"GASTOS DE LA DEUDA PÚBLICA EXTERNA","det":true,"nat":"D","niv":6},{"c":"550000000000","d":"OTROS GASTOS Y PÉRDIDAS EXTRAORDINARIAS","det":false,"nat":"D","niv":2},{"c":"551000000000","d":"ESTIMACIONES, DEPRECIACIONES, DETERIOROS, OBSOLESCENCIA Y AMORTIZACIONES","det":false,"nat":"D","niv":3},{"c":"551300000000","d":"DEPRECIACIÓN DE BIENES INMUEBLES","det":false,"nat":"D","niv":4},{"c":"551310000000","d":"DEPRECIACIÓN DE BIENES INMUEBLES","det":false,"nat":"D","niv":5},{"c":"551310010000","d":"DEPRECIACIÓN EDIFICIOS NO HABITACIONALES","det":true,"nat":"D","niv":6},{"c":"551500000000","d":"DEPRECIACIÓN DE BIENES MUEBLES","det":false,"nat":"D","niv":4},{"c":"551510000000","d":"DEPRECIACIÓN DE BIENES MUEBLES","det":false,"nat":"D","niv":5},{"c":"551510010000","d":"DEPRECIACIÓN DE MOBILIARIO Y EQUIPO DE ADMINISTRACIÓN","det":false,"nat":"D","niv":6},{"c":"551510010001","d":"DEPRECIACIÓN DE MUEBLES DE OFICINA Y ESTANTERÍA","det":true,"nat":"D","niv":7},{"c":"551510010002","d":"DEPRECIACIÓN DE MUEBLES, EXCEPTO DE OFICINA Y ESTANTERÍA","det":true,"nat":"D","niv":7},{"c":"551510010003","d":"DEPRECIACIÓN DE EQUIPO DE CÓMPUTO Y TECNOLOGÍAS DE LA INFORMACIÓN","det":true,"nat":"D","niv":7},{"c":"551510040000","d":"DEPRECIACIÓN DE EQUIPO DE TRANSPORTE","det":false,"nat":"D","niv":6},{"c":"551510040001","d":"DEPRECIACIÓN DE AUTOMÓVILES Y EQUIPO TERRESTRE","det":true,"nat":"D","niv":7},{"c":"551800000000","d":"DISMINUCIÓN DE BIENES POR PÉRDIDA U OBSOLESCENCIA","det":false,"nat":"D","niv":4},{"c":"551810000000","d":"BAJAS POR ACTIVO FIJO","det":false,"nat":"D","niv":5},{"c":"551810010000","d":"BAJA POR PÉRDIDA","det":true,"nat":"D","niv":6},{"c":"552000000000","d":"PROVISIONES","det":false,"nat":"D","niv":3},{"c":"552100000000","d":"PROVISIONES DE PASIVOS A CORTO PLAZO","det":false,"nat":"D","niv":4},{"c":"552110000000","d":"PROVISIÓN DE PASIVOS A CORTO PLAZO","det":false,"nat":"D","niv":5},{"c":"552110010000","d":"PROVISIÓN PARA DEMANDAS Y JUICIOS A CORTO PLAZO","det":true,"nat":"D","niv":6},{"c":"552110020000","d":"PROVISIÓN PARA CONTINGENCIAS A CORTO PLAZO","det":false,"nat":"D","niv":6},{"c":"552110020001","d":"CONTINGENCIAS POR FENÓMENOS NATURALES","det":true,"nat":"D","niv":7},{"c":"552110090000","d":"OTRAS PROVISIONES A CORTO PLAZO","det":false,"nat":"D","niv":6},{"c":"552110090001","d":"PROVISIÓN PARA AGUINALDO A CORTO PLAZO","det":true,"nat":"D","niv":7},{"c":"552200000000","d":"PROVISIONES DE PASIVO A LARGO PLAZO","det":false,"nat":"D","niv":4},{"c":"552210000000","d":"PROVISIÓN DE PASIVOS A LARGO PLAZO","det":false,"nat":"D","niv":5},{"c":"552210010000","d":"PROVISIÓN PARA DEMANDAS Y JUICIOS A LARGO PLAZO","det":true,"nat":"D","niv":6},{"c":"560000000000","d":"INVERSIÓN PÚBLICA","det":false,"nat":"D","niv":2},{"c":"561000000000","d":"INVERSIÓN PÚBLICA NO CAPITALIZABLE","det":false,"nat":"D","niv":3},{"c":"561100000000","d":"CONSTRUCCIÓN EN BIENES NO CAPITALIZABLE","det":false,"nat":"D","niv":4},{"c":"561110000000","d":"OBRA PÚBLICA NO CAPITALIZABLE: EDIFICACIÓN HABITACIONAL EN PROCESO EN BIENES PROPIOS","det":true,"nat":"D","niv":5},{"c":"600000000000","d":"CUENTAS DE CIERRE CONTABLE","det":false,"nat":"D","niv":1},{"c":"610000000000","d":"RESUMEN DE INGRESOS Y GASTOS","det":true,"nat":"D","niv":2},{"c":"620000000000","d":"AHORRO DE LA GESTIÓN","det":true,"nat":"D","niv":2},{"c":"630000000000","d":"DESAHORRO DE LA GESTIÓN","det":true,"nat":"D","niv":2},{"c":"700000000000","d":"CUENTAS DE ORDEN CONTABLES","det":false,"nat":"D","niv":1},{"c":"772000000000","d":"PROVISIONES A CORTO PLAZO","det":false,"nat":"A","niv":3},{"c":"772100000000","d":"PASIVO CONTINGENTE NIF D-3","det":true,"nat":"A","niv":4},{"c":"800000000000","d":"CUENTAS DE ORDEN PRESUPUESTARIAS","det":false,"nat":"A","niv":1},{"c":"810000000000","d":"LEY DE INGRESOS","det":false,"nat":"D","niv":2},{"c":"811000000000","d":"LEY DE INGRESOS ESTIMADA","det":true,"nat":"D","niv":3},{"c":"812000000000","d":"LEY DE INGRESOS POR EJECUTAR","det":true,"nat":"A","niv":3},{"c":"813000000000","d":"MODIFICACIONES A LA LEY DE INGRESOS ESTIMADA","det":true,"nat":"D","niv":3},{"c":"814000000000","d":"LEY DE INGRESOS DEVENGADA","det":true,"nat":"A","niv":3},{"c":"815000000000","d":"LEY DE INGRESOS RECAUDADA","det":true,"nat":"A","niv":3},{"c":"820000000000","d":"PRESUPUESTO DE EGRESOS","det":false,"nat":"D","niv":2},{"c":"821000000000","d":"PRESUPUESTO DE EGRESOS APROBADO","det":true,"nat":"A","niv":3},{"c":"822000000000","d":"PRESUPUESTO DE EGRESOS POR EJERCER","det":false,"nat":"D","niv":3},{"c":"822100000000","d":"PRESUPUESTO DE EGRESOS POR EJERCER","det":true,"nat":"D","niv":4},{"c":"822200000000","d":"PRESUPUESTO DE EGRESOS PRECOMPROMETIDO","det":true,"nat":"D","niv":4},{"c":"823000000000","d":"MODIFICACIONES AL PRESUPUESTO DE EGRESOS APROBADO","det":true,"nat":"A","niv":3},{"c":"824000000000","d":"PRESUPUESTO DE EGRESOS COMPROMETIDO","det":true,"nat":"D","niv":3},{"c":"825000000000","d":"PRESUPUESTO DE EGRESOS DEVENGADO","det":true,"nat":"D","niv":3},{"c":"826000000000","d":"PRESUPUESTO DE EGRESOS EJERCIDO","det":true,"nat":"D","niv":3},{"c":"827000000000","d":"PRESUPUESTO DE EGRESOS PAGADO","det":true,"nat":"D","niv":3},{"c":"900000000000","d":"CUENTAS DE CIERRE PRESUPUESTARIO","det":false,"nat":"D","niv":1},{"c":"910000000000","d":"SUPERÁVIT FINANCIERO","det":true,"nat":"D","niv":2},{"c":"920000000000","d":"DÉFICIT FINANCIERO","det":true,"nat":"D","niv":2},{"c":"930000000000","d":"ADEUDOS EJERCICIOS FISCALES ANTERIORES","det":true,"nat":"D","niv":2}],"presupuesto":{"ingresos":[{"rubro":"0","concepto":"Ingresos derivados de financiamientos","estimado":1000000},{"rubro":"1","concepto":"Impuestos","estimado":12000000},{"rubro":"2","concepto":"Cuotas y aportaciones de Seguridad Social","estimado":6000000},{"rubro":"3","concepto":"Contribuciones de mejoras","estimado":1500000},{"rubro":"4","concepto":"Derechos","estimado":2500000},{"rubro":"5","concepto":"Productos","estimado":1000000},{"rubro":"6","concepto":"Aprovechamientos","estimado":30000000},{"rubro":"7","concepto":"Ingresos por Venta de Bienes, Prestación de Servicios y Otros Ingresos","estimado":8000000},{"rubro":"8","concepto":"Participaciones, Aportaciones, Convenios, Incentivos Derivados de la Colaboración Fiscal y Fondos Distintos de Aportaciones","estimado":45000000},{"rubro":"9","concepto":"Transferencias, Asignaciones, Subsidios y Subvenciones, y Pensiones y Jubilaciones","estimado":20000000}],"egresos":[{"capitulo":"1000","concepto":"Servicios Personales","aprobado":12000000},{"capitulo":"2000","concepto":"Materiales y Suministros","aprobado":6000000},{"capitulo":"3000","concepto":"Servicios Generales","aprobado":1500000},{"capitulo":"4000","concepto":"Transferencias, Asignaciones, subsidios y otras ayudas","aprobado":1000000},{"capitulo":"5000","concepto":"Bienes muebles, Inmuebles e Intangibles","aprobado":20000000},{"capitulo":"6000","concepto":"Inversión pública","aprobado":36000000},{"capitulo":"7000","concepto":"Inversiones Financieras y Otras Provisiones","aprobado":2500000},{"capitulo":"8000","concepto":"Participaciones y Aportaciones","aprobado":40000000},{"capitulo":"9000","concepto":"Deuda Pública","aprobado":8000000}]},"operaciones":{"titulo":"CASO PRÁCTICO – CONTABILIDAD GUBERNAMENTAL: Ente público \"Gobierno del Estado – Ejercicio 2026\"","instrucciones":["1. Registre la póliza de apertura con los saldos iniciales y los asientos presupuestales de apertura (Ley de Ingresos y Presupuesto de Egresos).","2. Para cada operación, elabore el asiento contable y/o los asientos presupuestales que correspondan (momentos contables del ingreso y del egreso, LGCG y normas del CONAC).","3. Utilice exclusivamente las cuentas del Plan de cuentas. Cada póliza debe cuadrar (cargos = abonos) por separado en lo contable y en lo presupuestal.","4. Elabore la Balanza de Comprobación, el Estado de Actividades, el Estado de Situación Financiera, el control presupuestal y la conciliación contable-presupuestal."],"operaciones":[{"no":"SI","fecha":"2026-01-01","operacion":"Saldos iniciales del ejercicio según el Estado de Situación Financiera al 31 de diciembre de 2025 (ver hoja Saldos iniciales). Registre la póliza de apertura.","clasif":""},{"no":"1","fecha":"2026-01-02","operacion":"Se publica y registra la Ley de Ingresos estimada por $127,000,000 y el Presupuesto de Egresos aprobado por $127,000,000 (ver hoja Ley de ingresos y Egresos).","clasif":""},{"no":"2","fecha":"2026-01-15","operacion":"Se recibe en la cuenta Banamex la primera ministración del Fondo General de Participaciones por $4,000,000.","clasif":"8"},{"no":"3","fecha":"2026-01-20","operacion":"Se recauda en la cuenta Banamex el Impuesto por obtención de premios por $1,200,000.","clasif":"1"},{"no":"4","fecha":"2026-01-25","operacion":"Se recaudan Derechos por el uso de la Ecovía por $650,000, depositados en Banamex.","clasif":"4"},{"no":"5","fecha":"2026-02-03","operacion":"El área de recursos materiales autoriza la requisición de materiales, útiles y equipos menores de oficina por $480,000.","clasif":"2000"},{"no":"6","fecha":"2026-02-05","operacion":"Se formaliza el pedido de los materiales de oficina con el proveedor adjudicado por $480,000.","clasif":"2000"},{"no":"7","fecha":"2026-02-10","operacion":"Se reciben de conformidad los materiales de oficina junto con la factura del proveedor por $480,000; queda pendiente de pago.","clasif":"2000"},{"no":"8","fecha":"2026-02-12","operacion":"Se emite y autoriza la orden de pago (cuenta por liquidar certificada) a favor del proveedor de materiales por $480,000.","clasif":"2000"},{"no":"9","fecha":"2026-02-15","operacion":"Se paga al proveedor de materiales, mediante transferencia Banamex, un abono parcial de $300,000.","clasif":"2000"},{"no":"10","fecha":"2026-02-28","operacion":"Se calcula la nómina del personal permanente: sueldos base $2,800,000, retención de ISR $350,000 y neto a pagar $2,450,000. La nómina se precompromete, compromete y devenga en el mismo acto.","clasif":"1000"},{"no":"11","fecha":"2026-02-28","operacion":"Se autoriza la orden de pago de la nómina neta por $2,450,000.","clasif":"1000"},{"no":"12","fecha":"2026-02-28","operacion":"Se dispersa por transferencia Banamex el pago de la nómina neta por $2,450,000.","clasif":"1000"},{"no":"13","fecha":"2026-03-05","operacion":"Se ejerce y entera al SAT la retención de ISR de la nómina por $350,000, pagada por transferencia Banamex.","clasif":"1000"},{"no":"14","fecha":"2026-03-08","operacion":"Se recibe el recibo de energía eléctrica por $420,000; el gasto se precompromete, compromete y devenga simultáneamente.","clasif":"3000"},{"no":"15","fecha":"2026-03-12","operacion":"Se autoriza la orden de pago del recibo de energía eléctrica por $420,000.","clasif":"3000"},{"no":"16","fecha":"2026-03-15","operacion":"Se paga por transferencia Banamex el recibo de energía eléctrica por $420,000.","clasif":"3000"},{"no":"17","fecha":"2026-03-20","operacion":"Se adquiere y paga de contado equipo de cómputo por $1,200,000; todos los momentos del gasto ocurren simultáneamente.","clasif":"5000"},{"no":"18","fecha":"2026-04-05","operacion":"Se adquiere a crédito un vehículo por $2,400,000; se recibe la unidad y la factura del proveedor (precompromiso, compromiso y devengo simultáneos).","clasif":"5000"},{"no":"19","fecha":"2026-04-20","operacion":"Se autoriza y paga al proveedor del vehículo un abono de $1,500,000 por transferencia Banamex.","clasif":"5000"},{"no":"20","fecha":"2026-05-02","operacion":"Se adjudica y firma el contrato de obra pública para la construcción de una edificación habitacional por $8,000,000 (precompromiso y compromiso).","clasif":"6000"},{"no":"21","fecha":"2026-05-06","operacion":"Se otorga al contratista un anticipo de $2,000,000 mediante transferencia Banamex, conforme al contrato de obra.","clasif":"6000"},{"no":"22","fecha":"2026-05-31","operacion":"Se recibe y aprueba la estimación núm. 1 de la obra por $3,500,000.","clasif":"6000"},{"no":"23","fecha":"2026-06-05","operacion":"Se autoriza el pago de la estimación núm. 1 por $3,500,000.","clasif":"6000"},{"no":"24","fecha":"2026-06-08","operacion":"Se amortiza el anticipo otorgado al contratista contra la estimación núm. 1 por $2,000,000.","clasif":"6000"},{"no":"25","fecha":"2026-06-10","operacion":"Se paga al contratista el saldo de la estimación núm. 1 por $1,500,000 mediante transferencia Banamex.","clasif":"6000"},{"no":"26","fecha":"2026-06-30","operacion":"Se recibe y aprueba la estimación núm. 2 de la obra por $2,500,000.","clasif":"6000"},{"no":"27","fecha":"2026-07-05","operacion":"Se autoriza el pago de la estimación núm. 2 por $2,500,000.","clasif":"6000"},{"no":"28","fecha":"2026-07-10","operacion":"Se paga al contratista la estimación núm. 2 por $2,500,000 mediante transferencia Banamex.","clasif":"6000"},{"no":"29","fecha":"2026-07-15","operacion":"Se recibe en Banamex la segunda ministración del Fondo General de Participaciones por $3,500,000.","clasif":"8"},{"no":"30","fecha":"2026-07-20","operacion":"Se recibe en Banamex el Fondo de Aportaciones para la Nómina Educativa y Gasto Operativo (FONE) por $5,000,000.","clasif":"8"},{"no":"31","fecha":"2026-08-05","operacion":"Se contratan servicios profesionales de asesoría por $300,000; se recibe el servicio y la factura (precompromiso, compromiso y devengo simultáneos).","clasif":"3000"},{"no":"32","fecha":"2026-08-15","operacion":"Se autoriza y paga por transferencia Banamex el servicio profesional de asesoría por $300,000.","clasif":"3000"},{"no":"33","fecha":"2026-08-25","operacion":"Se vende un vehículo con costo de adquisición de $700,000 y depreciación acumulada de $500,000 en $250,000, cobrados en Banamex. Registre el ingreso presupuestal por la enajenación.","clasif":"6"},{"no":"34","fecha":"2026-08-31","operacion":"Se cobran en Banamex $600,000 de cuentas por cobrar por venta de bienes y prestación de servicios de ejercicios anteriores (sin afectación presupuestal).","clasif":""},{"no":"35","fecha":"2026-09-30","operacion":"Se registra la depreciación del periodo: edificios no habitacionales $600,000; automóviles y equipo terrestre $1,450,000; muebles de oficina y estantería $261,250; equipo de cómputo $800,000.","clasif":""},{"no":"36","fecha":"2026-10-05","operacion":"Se autoriza y paga al proveedor del vehículo un abono adicional de $630,000 por transferencia Banamex.","clasif":"5000"},{"no":"37","fecha":"2026-10-15","operacion":"Se recibe y aprueba la estimación núm. 3 (finiquito) de la obra por $2,000,000.","clasif":"6000"},{"no":"38","fecha":"2026-10-20","operacion":"Se autoriza el pago de la estimación núm. 3 por $2,000,000.","clasif":"6000"},{"no":"39","fecha":"2026-10-25","operacion":"Se paga al contratista la estimación núm. 3 por $2,000,000 mediante transferencia Banamex.","clasif":"6000"},{"no":"40","fecha":"2026-10-31","operacion":"Se concluye la obra y se recibe el acta de entrega-recepción; reclasifique la construcción en proceso ($8,000,000) a Edificación habitacional.","clasif":""},{"no":"41","fecha":"2026-11-05","operacion":"Se autoriza una aportación al fideicomiso del Poder Ejecutivo por $2,000,000 (precompromiso, compromiso y devengo simultáneos); queda pendiente de transferir.","clasif":"7000"},{"no":"42","fecha":"2026-11-10","operacion":"Se autoriza el pago y se transfieren al fideicomiso $2,000,000 desde Banamex.","clasif":"7000"},{"no":"43","fecha":"2026-11-20","operacion":"El fiduciario informa gastos pagados con el patrimonio del fideicomiso: materiales de oficina $850,000, servicios profesionales $400,000 y pasajes terrestres $600,000.","clasif":""},{"no":"44","fecha":"2026-11-30","operacion":"Con base en un avalúo, se reconoce un revalúo de terrenos por $600,000.","clasif":""},{"no":"45","fecha":"2026-12-05","operacion":"Se entregan $400,000 a un servidor público como gastos por comprobar para una comisión oficial, mediante transferencia Banamex.","clasif":""},{"no":"46","fecha":"2026-12-15","operacion":"El servidor público comprueba $360,000 de pasajes aéreos y reintegra $40,000 en Banamex. Al comprobar, todos los momentos del gasto se registran simultáneamente.","clasif":"3000"},{"no":"47","fecha":"2026-12-20","operacion":"El fiduciario informa servicios profesionales por $150,000 pagados con el patrimonio del fideicomiso.","clasif":""}]},"saldos":[{"c":"111210010001","d":"1064-BNMEX 47570005541/ISN","nat":"D","saldo":18500000},{"c":"112110010000","d":"TÍTULOS Y VALORES A CORTO PLAZO","nat":"D","saldo":2000000},{"c":"112210010000","d":"CUENTAS POR COBRAR POR VENTA DE BIENES Y PRESTACIÓN DE SERVICIOS","nat":"D","saldo":1200000},{"c":"112310020000","d":"GASTOS POR COMPROBAR","nat":"D","saldo":350000},{"c":"123110010000","d":"TERRENOS","nat":"D","saldo":8600000},{"c":"123310010000","d":"EDIFICIOS NO HABITACIONALES","nat":"D","saldo":12000000},{"c":"124410010000","d":"VEHÍCULOS Y EQUIPO TERRESTRE","nat":"D","saldo":6000000},{"c":"124110010000","d":"MUEBLES DE OFICINA Y ESTANTERÍA","nat":"D","saldo":2500000},{"c":"124130010000","d":"EQUIPO DE CÓMPUTO Y TECNOLOGÍAS DE LA INFORMACIÓN","nat":"D","saldo":1500000},{"c":"126110020000","d":"DEPRECIACIÓN ACUMULADA DE EDIFICIOS NO HABITACIONALES","nat":"A","saldo":1200000},{"c":"126340010000","d":"DEPRECIACIÓN ACUMULADA DE AUTOMÓVILES Y EQUIPO TERRESTRE","nat":"A","saldo":2100000},{"c":"126310010000","d":"DEPRECIACIÓN ACUMULADA DE MUEBLES DE OFICINA Y ESTANTERÍA","nat":"A","saldo":900000},{"c":"126310030000","d":"DEPRECIACIÓN ACUMULADA DE EQUIPO DE CÓMPUTO Y TECNOLOGÍAS DE LA INFORMACIÓN","nat":"A","saldo":600000},{"c":"211210010000","d":"PROVEEDORES POR ADQUISICIÓN DE BIENES Y SERVICIOS POR PAGAR A CORTO PLAZO","nat":"A","saldo":1400000},{"c":"211310000000","d":"CONTRATISTAS POR PAGAR A CORTO PLAZO","nat":"A","saldo":900000},{"c":"211710010000","d":"RETENCIONES IMPUESTOS POR PAGAR A CORTO PLAZO","nat":"A","saldo":450000},{"c":"211990010999","d":"ACREEDORES DIVERSOS VARIOS","nat":"A","saldo":300000},{"c":"322100000000","d":"RESULTADO EJERCICIOS ANTERIORES","nat":"A","saldo":44800000}],"sol":"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"};
+</script>
+<script>
+/* Motor contable de SCG-Edu: funciones puras, sin interfaz.
+   Funciona en el navegador (window.Motor) y en Node (require). */
+(function (raiz) {
+  'use strict';
+
+  // Longitud del prefijo significativo por nivel (máscara 0-0-0-0-0-000-0000).
+  const PREFIJO = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 8, 7: 12 };
+  const TOL = 0.005;
+
+  const cent = (x) => Math.round((Number(x) || 0) * 100);
+  const r2 = (x) => cent(x) / 100;
+  const igual = (a, b) => Math.abs(cent(a) - cent(b)) === 0;
+
+  function mascara(c) {
+    c = String(c);
+    return [c[0], c[1], c[2], c[3], c[4], c.slice(5, 8), c.slice(8, 12)].join('-');
+  }
+
+  function indiceCatalogo(catalogo) {
+    const porCodigo = new Map();
+    catalogo.forEach((c) => porCodigo.set(c.c, Object.assign({ pre: c.c.slice(0, PREFIJO[c.niv]) }, c)));
+    return porCodigo;
+  }
+
+  const tabDeCuenta = (c) => (String(c)[0] === '8' ? 'presupuestal' : 'contable');
+
+  /* Valida un renglón capturado. Devuelve un mensaje de error o null. */
+  function validarRenglon(r, tab, idx) {
+    if (!r.c && !r.cargo && !r.abono) return null;
+    if (!r.c) return 'Capture la cuenta.';
+    const cta = idx.get(r.c);
+    if (!cta) return 'La cuenta no existe en el Plan de cuentas.';
+    if (!cta.det) return 'Seleccione una subcuenta de último nivel.';
+    if (tabDeCuenta(r.c) !== tab) {
+      return tab === 'contable'
+        ? 'Las cuentas 8 (presupuestales) van en la pestaña Registro presupuestal.'
+        : 'Las cuentas 1 a 7 van en la pestaña Registro contable.';
+    }
+    const cargo = Number(r.cargo) || 0, abono = Number(r.abono) || 0;
+    if (cargo < 0 || abono < 0) return 'Los importes deben ser positivos.';
+    if (cargo && abono) return 'Un renglón no puede tener cargo y abono a la vez.';
+    if (!cargo && !abono) return 'Capture el importe en Cargo o en Abono.';
+    return null;
+  }
+
+  function sumas(renglones) {
+    let cargos = 0, abonos = 0;
+    renglones.forEach((r) => { cargos += cent(r.cargo); abonos += cent(r.abono); });
+    return { cargos: cargos / 100, abonos: abonos / 100, dif: (cargos - abonos) / 100 };
+  }
+
+  const renglonesValidos = (rs) => (rs || []).filter((r) => r.c && (Number(r.cargo) || Number(r.abono)));
+
+  /* Convierte las pólizas del alumno en líneas de diario.
+     polizas = { [asiento]: { contable:[], presupuestal:[], clasif } } */
+  function diario(polizas, operaciones) {
+    const lineas = [];
+    operaciones.forEach((op) => {
+      const p = polizas[op.no];
+      if (!p || !p.guardada) return;
+      const pres = renglonesValidos(p.presupuestal);
+      const afecta = pres.length > 0;
+      renglonesValidos(p.contable).forEach((r) => lineas.push({
+        a: op.no, t: op.no === 'SI' ? 'Apertura' : 'Contable', c: r.c,
+        cargo: r2(r.cargo), abono: r2(r.abono), clasif: '', afecta,
+      }));
+      pres.forEach((r) => lineas.push({
+        a: op.no, t: 'Presupuestal', c: r.c,
+        cargo: r2(r.cargo), abono: r2(r.abono), clasif: p.clasif === 'NA' ? '' : p.clasif || '', afecta,
+      }));
+    });
+    return lineas;
+  }
+
+  /* Balanza de comprobación: saldo inicial (póliza de apertura), cargos, abonos
+     y saldo final por cuenta; las cuentas de mayor suman a sus subcuentas.
+     Saldos con signo: deudor positivo, acreedor negativo. */
+  function balanza(lineas, catalogo) {
+    const idx = indiceCatalogo(catalogo);
+    const mov = new Map();
+    lineas.forEach((l) => {
+      const m = mov.get(l.c) || { si: 0, cargos: 0, abonos: 0 };
+      if (l.t === 'Apertura') m.si += cent(l.cargo) - cent(l.abono);
+      else { m.cargos += cent(l.cargo); m.abonos += cent(l.abono); }
+      mov.set(l.c, m);
+    });
+    const filas = catalogo.map((c) => {
+      const pre = idx.get(c.c).pre;
+      let si = 0, cargos = 0, abonos = 0;
+      mov.forEach((m, cod) => {
+        if (cod.startsWith(pre)) { si += m.si; cargos += m.cargos; abonos += m.abonos; }
+      });
+      return {
+        c: c.c, d: c.d, niv: c.niv, det: c.det, nat: c.nat,
+        si: si / 100, cargos: cargos / 100, abonos: abonos / 100, saldo: (si + cargos - abonos) / 100,
+      };
+    });
+    const det = filas.filter((f) => f.det);
+    const control = (pred) => {
+      const fs = det.filter((f) => pred(f.c[0]));
+      return {
+        deudor: r2(fs.reduce((s, f) => s + Math.max(f.saldo, 0), 0)),
+        acreedor: r2(fs.reduce((s, f) => s + Math.max(-f.saldo, 0), 0)),
+        cargos: r2(fs.reduce((s, f) => s + f.cargos + Math.max(f.si, 0), 0)),
+        abonos: r2(fs.reduce((s, f) => s + f.abonos + Math.max(-f.si, 0), 0)),
+      };
+    };
+    const contable = control((d) => d !== '8');
+    const presupuestal = control((d) => d === '8');
+    const cuadra = igual(contable.deudor, contable.acreedor) && igual(presupuestal.deudor, presupuestal.acreedor);
+    const porCodigo = new Map(filas.map((f) => [f.c, f]));
+    return { filas, porCodigo, contable, presupuestal, cuadra };
+  }
+
+  /* Saldo con signo (deudor +) de una cuenta o rama, a partir de la balanza. */
+  const saldo = (bz, codigo) => (bz.porCodigo.get(codigo) || { saldo: 0 }).saldo;
+
+  /* Control presupuestal por rubro CRI y capítulo COG. */
+  function presupuesto(lineas, ppto) {
+    const pres = lineas.filter((l) => l.t === 'Presupuestal');
+    const suma = (cta, lado, clasif) => r2(pres
+      .filter((l) => l.c === cta && (clasif === undefined || l.clasif === clasif))
+      .reduce((s, l) => s + l[lado], 0));
+
+    const ingresos = ppto.ingresos.map((i) => {
+      const devengado = suma('814000000000', 'abono', i.rubro);
+      const recaudado = suma('815000000000', 'abono', i.rubro);
+      const modificado = i.estimado;
+      return {
+        clave: i.rubro, concepto: i.concepto, estimado: i.estimado, modificaciones: 0, modificado,
+        devengado, recaudado, porRecaudar: r2(modificado - recaudado),
+        alerta: recaudado > modificado + TOL ? 'Recaudación mayor a la estimada'
+          : recaudado > devengado + TOL ? 'Recaudado sin devengar' : '',
+      };
+    });
+    const egresos = ppto.egresos.map((e) => {
+      const comprometido = suma('824000000000', 'cargo', e.capitulo);
+      const devengado = suma('825000000000', 'cargo', e.capitulo);
+      const ejercido = suma('826000000000', 'cargo', e.capitulo);
+      const pagado = suma('827000000000', 'cargo', e.capitulo);
+      const modificado = e.aprobado;
+      let alerta = '';
+      if (comprometido > modificado + TOL) alerta = 'Sobregiro: comprometido mayor al presupuesto';
+      else if (devengado > comprometido + TOL) alerta = 'Devengado mayor al comprometido';
+      else if (ejercido > devengado + TOL) alerta = 'Ejercido mayor al devengado';
+      else if (pagado > ejercido + TOL) alerta = 'Pagado mayor al ejercido';
+      return {
+        clave: e.capitulo, concepto: e.concepto, aprobado: e.aprobado, modificaciones: 0, modificado,
+        comprometido, devengado, ejercido, pagado,
+        disponible: r2(modificado - comprometido), porPagar: r2(devengado - pagado), alerta,
+      };
+    });
+
+    // Movimientos sin clasificación válida: se muestran aparte para que el total cuadre.
+    const clavesI = new Set(ppto.ingresos.map((i) => i.rubro));
+    const clavesE = new Set(ppto.egresos.map((e) => e.capitulo));
+    const sinI = pres.filter((l) => (l.c === '814000000000' || l.c === '815000000000') && !clavesI.has(l.clasif));
+    const sinE = pres.filter((l) => /^82[4-7]/.test(l.c) && !clavesE.has(l.clasif));
+    if (sinI.length) {
+      const devengado = r2(sinI.filter((l) => l.c[2] === '4').reduce((s, l) => s + l.abono, 0));
+      const recaudado = r2(sinI.filter((l) => l.c[2] === '5').reduce((s, l) => s + l.abono, 0));
+      ingresos.push({ clave: '?', concepto: 'Sin clasificar (revise el Rubro CRI de sus pólizas)', estimado: 0, modificaciones: 0, modificado: 0,
+        devengado, recaudado, porRecaudar: r2(-recaudado), alerta: 'Movimientos sin Rubro CRI' });
+    }
+    if (sinE.length) {
+      const s = (d) => r2(sinE.filter((l) => l.c[2] === d).reduce((t, l) => t + l.cargo, 0));
+      const comprometido = s('4'), devengado = s('5');
+      egresos.push({ clave: '?', concepto: 'Sin clasificar (revise el Capítulo COG de sus pólizas)', aprobado: 0, modificaciones: 0, modificado: 0,
+        comprometido, devengado, ejercido: s('6'), pagado: s('7'), disponible: r2(-comprometido), porPagar: r2(devengado - s('7')),
+        alerta: 'Movimientos sin Capítulo COG' });
+    }
+
+    const tot = (rows, campos) => {
+      const t = {};
+      campos.forEach((k) => { t[k] = r2(rows.reduce((s, r) => s + r[k], 0)); });
+      return t;
+    };
+    return {
+      ingresos, egresos,
+      totIngresos: tot(ingresos, ['estimado', 'modificaciones', 'modificado', 'devengado', 'recaudado', 'porRecaudar']),
+      totEgresos: tot(egresos, ['aprobado', 'modificaciones', 'modificado', 'comprometido', 'devengado', 'ejercido', 'pagado', 'disponible', 'porPagar']),
+      registrado: {
+        estimado: suma('811000000000', 'cargo'),
+        aprobado: suma('821000000000', 'abono'),
+      },
+    };
+  }
+
+  /* Estado de Actividades, Estado de Situación Financiera y conciliaciones
+     (misma lógica que la hoja 'Estados financieros'). */
+  function estados(lineas, catalogo, ppto) {
+    const bz = balanza(lineas, catalogo);
+    const cp = presupuesto(lineas, ppto);
+    const s = (c) => saldo(bz, c);
+    const nombre = (c) => (bz.porCodigo.get(c) || { d: c }).d;
+
+    const ingresos = ['410000000000', '420000000000', '430000000000'].filter((c) => bz.porCodigo.has(c)).map((c) => ({ c, d: nombre(c), v: r2(-s(c)) }));
+    const gastos = ['510000000000', '520000000000', '530000000000', '540000000000', '550000000000', '560000000000']
+      .filter((c) => bz.porCodigo.has(c)).map((c) => ({ c, d: nombre(c), v: r2(s(c)) }));
+    const totIngresos = r2(ingresos.reduce((t, x) => t + x.v, 0));
+    const totGastos = r2(gastos.reduce((t, x) => t + x.v, 0));
+    const resultado = r2(totIngresos - totGastos);
+    const actividades = {
+      ingresos, gastos, totIngresos, totGastos, resultado,
+      cuadra: igual(totIngresos, -s('400000000000')) && igual(totGastos, s('500000000000')),
+    };
+
+    const activo = ['110000000000', '120000000000'].filter((c) => bz.porCodigo.has(c)).map((c) => ({ c, d: nombre(c), v: r2(s(c)) }));
+    const pasivo = ['210000000000', '220000000000'].filter((c) => bz.porCodigo.has(c)).map((c) => ({ c, d: nombre(c), v: r2(-s(c)) }));
+    const hacienda = [{ c: '310000000000', d: nombre('310000000000'), v: r2(-s('310000000000')) }];
+    bz.filas.filter((f) => f.niv === 3 && f.c.startsWith('32') && f.c !== '321000000000' && !igual(f.saldo, 0))
+      .forEach((f) => hacienda.push({ c: f.c, d: f.d, v: r2(-f.saldo) }));
+    hacienda.push({ c: '321000000000', d: 'Resultado del ejercicio (Ahorro / Desahorro)', v: r2(resultado - s('321000000000')) });
+    const totActivo = r2(activo.reduce((t, x) => t + x.v, 0));
+    const totPasivo = r2(pasivo.reduce((t, x) => t + x.v, 0));
+    const totHacienda = r2(hacienda.reduce((t, x) => t + x.v, 0));
+    const situacion = {
+      activo, pasivo, hacienda, totActivo, totPasivo, totHacienda,
+      totPasivoHacienda: r2(totPasivo + totHacienda),
+      cuadra: igual(totActivo, totPasivo + totHacienda),
+    };
+
+    // Conciliación de ingresos
+    const contNoPres = (grupo, signo) => r2(lineas
+      .filter((l) => !l.afecta && l.t !== 'Apertura' && l.t !== 'Presupuestal' && l.c[0] === grupo)
+      .reduce((t, l) => t + signo * (l.cargo - l.abono), 0));
+    const ingPres = cp.totIngresos.devengado;
+    const ganancia = r2(-s('416910000000'));
+    const otrosIng = contNoPres('4', -1);
+    const rubro6 = (cp.ingresos.find((i) => i.clave === '6') || { devengado: 0 }).devengado;
+    const ingCont = r2(ingPres + ganancia + otrosIng - rubro6);
+    const concIngresos = { ingPres, ganancia, otrosIng, rubro6, ingCont, cuadra: igual(ingCont, totIngresos) };
+
+    // Conciliación de egresos
+    const dev = (cap) => (cp.egresos.find((e) => e.clave === cap) || { devengado: 0 }).devengado;
+    const egrPres = cp.totEgresos.devengado;
+    const cap5 = dev('5000'), cap6 = dev('6000'), cap7 = dev('7000'), cap9 = dev('9000');
+    const deprec = r2(s('551000000000'));
+    const otrosGas = r2(contNoPres('5', 1) - deprec);
+    const gasCont = r2(egrPres - (cap5 + cap6 + cap7 + cap9) + deprec + otrosGas);
+    const concEgresos = { egrPres, cap5, cap6, cap7, cap9, deprec, otrosGas, gasCont, cuadra: igual(gasCont, totGastos) };
+
+    return { bz, cp, actividades, situacion, concIngresos, concEgresos };
+  }
+
+  /* Advertencias (no bloquean) sobre la secuencia de momentos contables,
+     acumulando todas las pólizas hasta la que se está guardando. */
+  function advertenciasMomentos(lineas, ppto) {
+    const avisos = [];
+    const cp = presupuesto(lineas, ppto);
+    cp.egresos.forEach((e) => {
+      if (e.alerta) avisos.push(`Capítulo ${e.clave}: ${e.alerta}.`);
+    });
+    cp.ingresos.forEach((i) => {
+      if (i.alerta) avisos.push(`Rubro ${i.clave}: ${i.alerta}.`);
+    });
+    return avisos;
+  }
+
+  /* Secuencia de momentos dentro de una póliza: un cargo a un momento debe
+     acompañarse del abono al momento anterior. */
+  const SECUENCIA_EGRESO = ['821000000000', '822100000000', '822200000000', '824000000000', '825000000000', '826000000000', '827000000000'];
+  const SECUENCIA_INGRESO = ['811000000000', '812000000000', '814000000000', '815000000000'];
+
+  function advertenciasPoliza(presupuestal) {
+    const avisos = [];
+    const rs = renglonesValidos(presupuestal);
+    const cargado = (c) => rs.some((r) => r.c === c && Number(r.cargo));
+    const tocado = (c) => rs.some((r) => r.c === c);
+    const nombres = {
+      '822200000000': 'precomprometido', '824000000000': 'comprometido', '825000000000': 'devengado',
+      '826000000000': 'ejercido', '827000000000': 'pagado', '814000000000': 'devengado', '815000000000': 'recaudado',
+    };
+    // Cada momento cargado debe acompañarse del abono al momento anterior.
+    ['825000000000', '826000000000', '827000000000'].forEach((c) => {
+      const anterior = SECUENCIA_EGRESO[SECUENCIA_EGRESO.indexOf(c) - 1];
+      if (cargado(c) && !tocado(anterior)) {
+        avisos.push(`Cargó el momento ${nombres[c]} sin abonar el momento ${nombres[anterior]} en esta póliza.`);
+      }
+    });
+    if (rs.some((r) => r.c === '815000000000' && Number(r.abono)) && !tocado('814000000000')) {
+      avisos.push('Registró el ingreso recaudado sin afectar el ingreso devengado en esta póliza.');
+    }
+    return avisos;
+  }
+
+  const api = {
+    PREFIJO, cent, r2, igual, mascara, indiceCatalogo, tabDeCuenta, validarRenglon, sumas,
+    renglonesValidos, diario, balanza, saldo, presupuesto, estados,
+    advertenciasMomentos, advertenciasPoliza, SECUENCIA_EGRESO, SECUENCIA_INGRESO,
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else raiz.Motor = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Calificador de SCG-Edu (misma lógica que la hoja 'Autoevaluación').
+   Funciona en el navegador (window.Calificador) y en Node (require). */
+(function (raiz) {
+  'use strict';
+
+  const CLAVE = 'SCG-Edu|Gobierno del Estado 2026';
+  const cent = (x) => Math.round((Number(x) || 0) * 100);
+
+  /* La solución viaja ofuscada (XOR + base64) para que no sea legible a simple vista. */
+  function xor(bytes) {
+    const k = new TextEncoder().encode(CLAVE);
+    return bytes.map((b, i) => b ^ k[i % k.length]);
+  }
+  function codificar(obj) {
+    const bytes = xor(new TextEncoder().encode(JSON.stringify(obj)));
+    if (typeof Buffer !== 'undefined') return Buffer.from(bytes).toString('base64');
+    let bin = '';
+    bytes.forEach((b) => { bin += String.fromCharCode(b); });
+    return btoa(bin);
+  }
+  function decodificar(txt) {
+    let bytes;
+    if (typeof Buffer !== 'undefined') bytes = new Uint8Array(Buffer.from(txt, 'base64'));
+    else bytes = Uint8Array.from(atob(txt), (ch) => ch.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(xor(bytes)));
+  }
+
+  /* Agrupa las líneas de la solución por asiento. */
+  function porAsiento(solucion) {
+    const m = new Map();
+    solucion.forEach((l) => {
+      if (!m.has(l.a)) m.set(l.a, []);
+      m.get(l.a).push(l);
+    });
+    return m;
+  }
+
+  const llave = (l) => `${l.c}|${cent(l.cargo) ? 'C' : 'A'}|${cent(l.cargo) || cent(l.abono)}`;
+
+  /* Compara un asiento del alumno contra la solución.
+     alumno y sol: listas de {c, cargo, abono}. */
+  function compararAsiento(alumno, sol) {
+    alumno = (alumno || []).filter((l) => l.c && (cent(l.cargo) || cent(l.abono)));
+    const pendientes = new Map();
+    sol.forEach((l) => pendientes.set(llave(l), (pendientes.get(llave(l)) || 0) + 1));
+    const marcas = alumno.map((l) => {
+      const k = llave(l);
+      const n = pendientes.get(k) || 0;
+      if (n > 0) { pendientes.set(k, n - 1); return true; }
+      return false;
+    });
+    const coincidentes = marcas.filter(Boolean).length;
+    const max = Math.max(sol.length, alumno.length);
+    let pct = max ? coincidentes / max : 0;
+
+    // Renglones compactados: si los saldos netos por cuenta coinciden y el alumno
+    // usó todas las cuentas de la solución, el asiento cuenta como correcto.
+    let compactado = false;
+    if (alumno.length && pct < 1) {
+      const neto = (ls) => {
+        const m = new Map();
+        ls.forEach((l) => m.set(l.c, (m.get(l.c) || 0) + cent(l.cargo) - cent(l.abono)));
+        return m;
+      };
+      const na = neto(alumno), ns = neto(sol);
+      const cuentas = new Set([...na.keys(), ...ns.keys()]);
+      const netosIguales = [...cuentas].every((c) => (na.get(c) || 0) === (ns.get(c) || 0));
+      const usaTodas = [...ns.keys()].every((c) => na.has(c));
+      if (netosIguales && usaTodas) { pct = 1; compactado = true; }
+    }
+    return { pct, coincidentes, lineasSol: sol.length, lineasAlumno: alumno.length, marcas, compactado };
+  }
+
+  const estado = (pct, capturado) => {
+    if (!capturado) return 'pendiente';
+    if (pct >= 0.9999) return 'correcto';
+    if (pct >= 0.5) return 'parcial';
+    return 'revisar';
+  };
+
+  /* Califica todas las pólizas del alumno.
+     polizas = { [asiento]: { contable:[], presupuestal:[], clasif, guardada } }
+     solucionVista = { [asiento]: true } cuando el alumno abrió la pista nivel 3. */
+  function calificar(polizas, solucion, operaciones, solucionVista, clasifEsperada) {
+    const sol = porAsiento(solucion);
+    const detalle = operaciones.map((op) => {
+      const p = polizas[op.no];
+      const capturado = !!(p && p.guardada);
+      const lineas = capturado ? [...(p.contable || []), ...(p.presupuestal || [])] : [];
+      const r = compararAsiento(lineas, sol.get(op.no) || []);
+      let pct = capturado ? r.pct : 0;
+      const vioSolucion = !!(solucionVista && solucionVista[op.no]);
+      if (vioSolucion) pct = Math.min(pct, 0.5);
+      const clasif = clasifEsperada ? clasifEsperada[op.no] || '' : null;
+      return {
+        asiento: op.no, capturado, pct, estado: estado(pct, capturado), vioSolucion,
+        coincidentes: r.coincidentes, lineasSol: r.lineasSol, lineasAlumno: r.lineasAlumno,
+        compactado: r.compactado, marcas: r.marcas,
+        clasifOk: clasif === null || !capturado || !(p.presupuestal || []).some((l) => l.c) ? null : (p.clasif === 'NA' ? '' : p.clasif || '') === clasif,
+      };
+    });
+    const promedio = detalle.reduce((s, d) => s + d.pct, 0) / (detalle.length || 1);
+    const calificacion = Math.round(promedio * 100) / 10;
+    return {
+      calificacion,
+      detalle,
+      correctos: detalle.filter((d) => d.estado === 'correcto').length,
+      parciales: detalle.filter((d) => d.estado === 'parcial').length,
+      revisar: detalle.filter((d) => d.estado === 'revisar').length,
+      pendientes: detalle.filter((d) => d.estado === 'pendiente').length,
+    };
+  }
+
+  /* Pistas generadas desde la solución. */
+  const MOMENTOS = {
+    '811': 'Ley de ingresos estimada', '812': 'Ley de ingresos por ejecutar', '813': 'Modificaciones a la ley de ingresos',
+    '814': 'Ingreso devengado', '815': 'Ingreso recaudado',
+    '821': 'Presupuesto de egresos aprobado', '822': 'Presupuesto por ejercer / precomprometido', '823': 'Modificaciones al presupuesto',
+    '824': 'Egreso comprometido', '825': 'Egreso devengado', '826': 'Egreso ejercido', '827': 'Egreso pagado',
+  };
+  function pistas(asiento, solucion, catalogo) {
+    const ls = solucion.filter((l) => l.a === asiento);
+    const pres = ls.filter((l) => l.c[0] === '8');
+    const cont = ls.filter((l) => l.c[0] !== '8');
+    const momentos = [...new Set(pres.map((l) => l.c.slice(0, 3)))].map((p) => MOMENTOS[p] || p);
+    const nivel1 = [];
+    nivel1.push(cont.length ? 'La operación lleva registro contable.' : 'La operación no lleva registro contable.');
+    nivel1.push(pres.length
+      ? `Momentos contables que intervienen: ${momentos.join(', ')}.`
+      : 'La operación no tiene afectación presupuestal.');
+    const nombre = new Map(catalogo.map((c) => [c.c, c.d]));
+    const mayores = [];
+    ls.forEach((l) => {
+      const p = l.c.slice(0, 3);
+      const lado = cent(l.cargo) ? 'cargo' : 'abono';
+      let m = mayores.find((x) => x.p === p);
+      if (!m) { m = { p, d: nombre.get(p.padEnd(12, '0')) || p, lados: new Set() }; mayores.push(m); }
+      m.lados.add(lado);
+    });
+    const nivel2 = mayores.map((m) => ({ cuenta: m.p, nombre: m.d, lados: [...m.lados].join(' y ') }));
+    const nivel3 = ls.map((l) => ({ c: l.c, d: nombre.get(l.c) || '', cargo: l.cargo, abono: l.abono, t: l.t }));
+    return { nivel1, nivel2, nivel3, clasif: (ls.find((l) => l.clasif) || {}).clasif || '' };
+  }
+
+  /* Tipo de póliza para el encabezado: según el movimiento de bancos. */
+  function tipoPoliza(asiento, solucion) {
+    const banco = solucion.filter((l) => l.a === asiento && l.c.startsWith('1112') && l.t !== 'Apertura')
+      .reduce((s, l) => s + cent(l.cargo) - cent(l.abono), 0);
+    if (banco > 0) return 'Ingreso';
+    if (banco < 0) return 'Egreso';
+    return 'Diario';
+  }
+
+  const api = { codificar, decodificar, compararAsiento, calificar, pistas, tipoPoliza, porAsiento, MOMENTOS };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else raiz.Calificador = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Interfaz de SCG-Edu. Depende de window.Motor, window.Calificador y window.SCG_DATA. */
+(function () {
+  'use strict';
+
+  const D = window.SCG_DATA;
+  const CAT = D.catalogo;
+  const IDX = Motor.indiceCatalogo(CAT);
+  const OPS = D.operaciones.operaciones;
+  const PPTO = D.presupuesto;
+  const SOL = Calificador.decodificar(D.sol);
+  const CLASIF = Object.fromEntries(OPS.map((o) => [o.no, o.clasif]));
+  const TIPO = Object.fromEntries(OPS.map((o) => [o.no, Calificador.tipoPoliza(o.no, SOL)]));
+  const EN_ARTIFACT = !!(window.claude && typeof window.claude.use === 'function');
+  const CLAVE = 'scg-edu-v1';
+
+  /* ---------------- utilidades ---------------- */
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const NF = new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const r2 = Motor.r2;
+  function fmt(n, cero) {
+    n = r2(n);
+    if (!n && cero !== undefined) return cero;
+    const s = '$' + NF.format(Math.abs(n));
+    return n < 0 ? `<span class="neg">(${s})</span>` : s;
+  }
+  const fmtTxt = (n) => { n = r2(n); const s = '$' + NF.format(Math.abs(n)); return n < 0 ? `(${s})` : s; };
+  const fmtImp = (n) => (n === '' || n == null || Number(n) === 0 ? '' : NF.format(Number(n)));
+  function parseImp(s) {
+    const t = String(s).replace(/[$,\s]/g, '');
+    if (t === '') return '';
+    const n = Number(t);
+    return Number.isFinite(n) ? r2(n) : NaN;
+  }
+  const fecha = (iso) => { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
+  const nombreCta = (c) => (IDX.get(c) || { d: '' }).d;
+  const norm = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  // Texto de búsqueda: nombre propio + nombre de la cuenta de mayor inmediata
+  // (así "banamex" encuentra la subcuenta 1064-BNMEX).
+  const BUSCA = new Map(CAT.map((c) => {
+    const padre = CAT.filter((p) => !p.det && p.niv < c.niv && c.c.startsWith(IDX.get(p.c).pre)).pop();
+    return [c.c, norm(c.d + ' ' + (c.det && padre ? padre.d : ''))];
+  }));
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const numPoliza = (no) => (no === 'SI' ? 'AP-0000' : `${TIPO[no][0]}-${String(no).padStart(4, '0')}`);
+  const opPorNo = (no) => OPS.find((o) => o.no === no);
+  const ESTADO_TXT = { correcto: 'Correcta', parcial: 'Parcial', revisar: 'Revisar', pendiente: 'Pendiente', capturado: 'Capturada' };
+  const chip = (e, txt) => `<span class="estado e-${e}">${esc(txt || ESTADO_TXT[e])}</span>`;
+  const ctrl = (ok, si, no) => `<span class="control ${ok ? 'si' : 'no'}">${ok ? '✔ ' + (si || 'Cuadra') : '✘ ' + (no || 'No cuadra')}</span>`;
+
+  function huella(txt) { // FNV-1a de 32 bits
+    let h = 0x811c9dc5;
+    for (let i = 0; i < txt.length; i++) { h ^= txt.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    return h.toString(16).padStart(8, '0');
+  }
+
+  /* ---------------- estado ---------------- */
+  const nuevoEstado = () => ({
+    app: 'SCG-Edu', tipo: 'avance', v: 1, alumno: null, modo: null,
+    polizas: {}, borradores: {}, pistas: {}, vistas: {}, entregado: null, actual: 'SI', creado: new Date().toISOString(),
+  });
+  let S = cargar() || nuevoEstado();
+  const UI = { tab: 'contable', retro: {}, confirmar: null, filtroOps: 'todas', mayor: '111210010001', bzNivel: 7, bzMov: true, dFiltro: { a: '', t: '', c: '' }, profesor: [] };
+
+  function cargar() {
+    try {
+      const t = localStorage.getItem(CLAVE);
+      const s = t && JSON.parse(t);
+      return s && s.app === 'SCG-Edu' ? Object.assign(nuevoEstado(), s) : null;
+    } catch (e) { return null; }
+  }
+  let tGuardar = null;
+  function persistir(inmediato) {
+    clearTimeout(tGuardar);
+    const f = () => { try { localStorage.setItem(CLAVE, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } };
+    if (inmediato) f(); else tGuardar = setTimeout(f, 250);
+  }
+
+  const esGuiada = () => S.modo === 'guiada';
+  const bloqueado = () => S.modo === 'evaluacion' && !!S.entregado;
+  const verCalif = () => esGuiada() || !!S.entregado;
+  const lineas = () => Motor.diario(S.polizas, OPS);
+  const calificar = () => Calificador.calificar(S.polizas, SOL, OPS, S.vistas, CLASIF);
+
+  function toast(msg) {
+    $$('.toast').forEach((x) => x.remove());
+    const t = document.createElement('div');
+    t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3200);
+  }
+
+  /* Guardar archivos: capacidad de descargas dentro de Claude, enlace en navegador normal. */
+  async function guardarArchivo(nombre, texto, mime) {
+    if (EN_ARTIFACT) {
+      try {
+        const dl = await window.claude.use('downloads');
+        if (dl) { await dl.save({ filename: nombre, data: texto }); toast(`Archivo ${nombre} guardado.`); return; }
+      } catch (e) {
+        if (e && e.code === 'declined') { toast('Descarga cancelada.'); return; }
+      }
+      mostrarTexto(nombre, texto);
+      return;
+    }
+    try {
+      const url = URL.createObjectURL(new Blob([texto], { type: mime || 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      toast(`Archivo ${nombre} descargado.`);
+    } catch (e) { mostrarTexto(nombre, texto); }
+  }
+  function mostrarTexto(nombre, texto) {
+    UI.textoManual = { nombre, texto };
+    render();
+    toast('Copie el contenido y guárdelo en un archivo de texto.');
+  }
+
+  /* ---------------- navegación ---------------- */
+  const MODULOS = [
+    ['tablero', 'Tablero'], ['captura', 'Captura de pólizas'], ['diario', 'Libro Diario'], ['mayor', 'Mayor / Cuentas T'],
+    ['balanza', 'Balanza de comprobación'], ['presupuesto', 'Control presupuestal'], ['estados', 'Estados financieros'],
+    ['resultados', 'Resultados'],
+  ];
+  function vistaActual() {
+    const h = (location.hash || '').replace('#', '');
+    if (h === 'profesor') return 'profesor';
+    if (!S.alumno) return 'inicio';
+    return MODULOS.some((m) => m[0] === h) ? h : 'tablero';
+  }
+  function ir(v) {
+    if (location.hash === '#' + v) render(); else location.hash = v;
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
+
+  function renderMarco() {
+    const v = vistaActual();
+    const menu = $('#menu');
+    const conMenu = v !== 'inicio' && !(v === 'profesor' && !S.alumno);
+    menu.hidden = !conMenu;
+    menu.innerHTML = MODULOS.map((m, i) => `<a href="#${m[0]}" ${v === m[0] ? 'aria-current="page"' : ''}><span class="n">${i + 1}</span>${m[1]}</a>`).join('')
+      + `<div class="sep"></div><a href="#profesor" ${v === 'profesor' ? 'aria-current="page"' : ''}><span class="n">P</span>Panel del profesor</a>`;
+    $('#usuario').innerHTML = S.alumno
+      ? `<span class="quien">${esc(S.alumno.nombre)} · ${esc(S.alumno.matricula)}</span><span class="chip-modo">${S.modo === 'guiada' ? 'Práctica guiada' : 'Evaluación'}${S.entregado ? ' · entregado' : ''}</span>`
+      : '';
+  }
+
+  const VISTAS = {};
+  function render() {
+    renderMarco();
+    const v = vistaActual();
+    const area = $('#area');
+    area.innerHTML = VISTAS[v]();
+    if (UI.textoManual) {
+      area.insertAdjacentHTML('afterbegin', `<div class="panel"><div class="cab"><h3>Guarde este contenido como ${esc(UI.textoManual.nombre)}</h3>
+        <button class="btn chico" data-acc="cerrar-texto">Cerrar</button></div><div class="cuerpo">
+        <p class="tenue">Esta vista no permite descargar archivos. Copie el texto y péguelo en un archivo nuevo con ese nombre.</p>
+        <textarea class="json" id="texto-manual" readonly>${esc(UI.textoManual.texto)}</textarea>
+        <div class="acciones"><button class="btn prim" data-acc="copiar-texto">Copiar</button></div></div></div>`);
+    }
+    if (v === 'captura') prepararCaptura();
+  }
+
+  /* ---------------- Inicio ---------------- */
+  VISTAS.inicio = () => `
+    <div class="portada">
+      <div class="ruta">Acceso al sistema</div>
+      <h2>Sistema de Contabilidad Gubernamental · Módulo de práctica</h2>
+      <p class="intro">Registre las operaciones del ejercicio 2026 del Gobierno del Estado como lo haría en un sistema real:
+      capture pólizas contables y presupuestales con el Plan de Cuentas del CONAC y vea generarse en tiempo real el Libro Diario,
+      el Mayor, la Balanza, el control presupuestal y los estados financieros.</p>
+      <form class="panel" id="form-inicio" autocomplete="off">
+        <div class="cab"><h3>Datos del usuario</h3></div>
+        <div class="cuerpo">
+          <div class="form-ini">
+            <div class="campo"><label for="i-nombre">Nombre completo</label><input id="i-nombre" required maxlength="80"></div>
+            <div class="campo"><label for="i-matricula">Matrícula</label><input id="i-matricula" required maxlength="20"></div>
+            <div class="campo"><label for="i-grupo">Grupo</label><input id="i-grupo" maxlength="20"></div>
+          </div>
+          <div class="modos" role="radiogroup" aria-label="Modo de trabajo">
+            <label class="modo"><input type="radio" name="modo" value="guiada" checked>
+              <span><b>Práctica guiada</b><span class="tenue">Al guardar cada póliza sabrá si es correcta. Tiene pistas en tres niveles; ver la solución deja ese asiento en 50 %.</span></span></label>
+            <label class="modo"><input type="radio" name="modo" value="evaluacion">
+              <span><b>Evaluación</b><span class="tenue">Sin pistas ni semáforo. La calificación aparece al presionar Entregar.</span></span></label>
+          </div>
+          <div class="acciones"><button class="btn prim" type="submit">Entrar al sistema</button>
+            <span class="tenue">o</span>
+            <label class="btn" for="f-importar">Importar avance (.json)</label>
+            <input type="file" id="f-importar" accept=".json,application/json" hidden>
+          </div>
+        </div>
+      </form>
+      <p class="tenue">Su avance se guarda en este navegador. Para continuar en otro equipo, use <b>Exportar avance</b> en Resultados e impórtelo aquí.
+      Profesores: <a href="#profesor">Panel del profesor</a>.</p>
+    </div>`;
+
+  /* ---------------- Tablero ---------------- */
+  function estadoOp(no, cal) {
+    const p = S.polizas[no];
+    if (!p || !p.guardada) return 'pendiente';
+    if (!esGuiada()) return 'capturado';
+    return cal.detalle.find((d) => d.asiento === no).estado;
+  }
+  VISTAS.tablero = () => {
+    const cal = calificar();
+    const capturadas = OPS.filter((o) => S.polizas[o.no] && S.polizas[o.no].guardada).length;
+    const pct = Math.round((capturadas / OPS.length) * 100);
+    const ef = Motor.estados(lineas(), CAT, PPTO);
+    const n = OPS.length;
+    const barra = esGuiada()
+      ? `<span style="width:${cal.correctos / n * 100}%;background:#5bb974"></span><span style="width:${cal.parciales / n * 100}%;background:#e8c547"></span><span style="width:${cal.revisar / n * 100}%;background:#e06c75"></span>`
+      : `<span style="width:${pct}%;background:var(--marino)"></span>`;
+    const filtro = UI.filtroOps;
+    const ops = OPS.filter((o) => {
+      const e = estadoOp(o.no, cal);
+      if (filtro === 'pendientes') return e === 'pendiente';
+      if (filtro === 'revisar') return e === 'parcial' || e === 'revisar';
+      return true;
+    });
+    return `
+    <div class="encab"><div><div class="ruta">Inicio › Tablero</div><h2>Tablero de operaciones</h2></div>
+      <div class="acciones"><button class="btn prim" data-acc="siguiente-pendiente">Capturar siguiente pendiente</button></div></div>
+    <div class="kpis">
+      <div class="kpi"><span class="etq">Avance</span><b>${capturadas} / ${n}</b><span class="tenue">${pct} % de las pólizas</span></div>
+      <div class="kpi"><span class="etq">Calificación parcial</span><b>${verCalif() ? cal.calificacion.toFixed(1) : '—'}</b><span class="tenue">${verCalif() ? 'Escala 0 a 10' : 'Se muestra al entregar'}</span></div>
+      ${esGuiada() ? `<div class="kpi"><span class="etq">Semáforo</span><b>${cal.correctos}</b><span class="tenue">correctas · ${cal.parciales} parciales · ${cal.revisar} por revisar</span></div>` : ''}
+      <div class="kpi"><span class="etq">Balanza</span><b style="font-size:var(--t-l)">${!capturadas ? 'Sin movimientos' : ef.bz.cuadra ? '✔ Cuadrada' : '✘ Descuadrada'}</b><span class="tenue">Activo ${fmtTxt(ef.situacion.totActivo)}</span></div>
+    </div>
+    <div class="avance" aria-label="Avance">${barra}</div>
+    <div class="panel">
+      <div class="cab"><h3>Operaciones del ejercicio 2026</h3>
+        <div class="acciones">
+          ${['todas', 'pendientes'].concat(esGuiada() ? ['revisar'] : []).map((f) => `<button class="btn chico ${filtro === f ? 'prim' : ''}" data-acc="filtro-ops" data-v="${f}">${{ todas: 'Todas', pendientes: 'Pendientes', revisar: 'Por corregir' }[f]}</button>`).join('')}
+        </div></div>
+      <div class="ops">
+        ${ops.map((o) => `<button class="op" data-acc="abrir" data-no="${o.no}"><span class="no">${o.no}</span><span class="fecha cod tenue">${fecha(o.fecha)}</span><span class="txt">${esc(o.operacion)}</span>${chip(estadoOp(o.no, cal))}</button>`).join('') || '<p class="cuerpo tenue">No hay operaciones con este filtro.</p>'}
+      </div>
+    </div>
+    <details class="panel"><summary class="cab" style="cursor:pointer"><h3>Instrucciones del caso práctico</h3></summary>
+      <div class="cuerpo"><ol style="margin:0;padding-left:20px">${D.operaciones.instrucciones.map((i) => `<li>${esc(i.replace(/^\d+\.\s*/, ''))}</li>`).join('')}</ol></div></details>`;
+  };
+
+  /* ---------------- Captura de pólizas ---------------- */
+  const vacio = () => ({ c: '', cargo: '', abono: '' });
+  const nuevaPoliza = () => ({ contable: [vacio(), vacio()], presupuestal: [vacio(), vacio()], clasif: '' });
+  function borrador(no) {
+    return S.borradores[no] || (S.polizas[no] ? clone(S.polizas[no]) : nuevaPoliza());
+  }
+  function editar(no) { // asegura que exista el borrador antes de modificarlo
+    if (!S.borradores[no]) S.borradores[no] = borrador(no);
+    const r = UI.retro[S.actual];
+    if (r) delete r.marcas;
+    return S.borradores[no];
+  }
+
+  function opcionesClasif(sel) {
+    const o = [['', 'Seleccione…'], ['NA', 'No aplica (registro global de Ley de Ingresos y Presupuesto)']];
+    PPTO.ingresos.forEach((i) => o.push([i.rubro, `Ingreso · Rubro CRI ${i.rubro} – ${i.concepto.trim()}`]));
+    PPTO.egresos.forEach((e) => o.push([e.capitulo, `Egreso · Capítulo COG ${e.capitulo} – ${e.concepto.trim()}`]));
+    return o.map(([v, t]) => `<option value="${v}" ${v === sel ? 'selected' : ''}>${esc(t)}</option>`).join('');
+  }
+
+  function referenciaCaso(no) {
+    if (no === 'SI') {
+      return `<details class="panel" open><summary class="cab" style="cursor:pointer"><h3>Saldos iniciales al 31 de diciembre de 2025</h3></summary>
+      <div class="cuerpo"><div class="tabla-cont"><table class="t"><thead><tr><th>Cuenta</th><th>Descripción</th><th class="num">Deudor</th><th class="num">Acreedor</th></tr></thead><tbody>
+      ${D.saldos.map((s) => `<tr><td class="cod">${Motor.mascara(s.c)}</td><td>${esc(s.d)}</td><td class="num">${s.nat === 'D' ? fmt(s.saldo) : ''}</td><td class="num">${s.nat === 'A' ? fmt(s.saldo) : ''}</td></tr>`).join('')}
+      </tbody><tfoot><tr><td colspan="2">Sumas iguales</td><td class="num">${fmt(D.saldos.filter((s) => s.nat === 'D').reduce((t, s) => t + s.saldo, 0))}</td><td class="num">${fmt(D.saldos.filter((s) => s.nat === 'A').reduce((t, s) => t + s.saldo, 0))}</td></tr></tfoot></table></div></div></details>`;
+    }
+    if (no === '1') {
+      const tabla = (tit, filas, k, v) => `<div class="tabla-cont"><table class="t"><thead><tr><th>${tit}</th><th>Concepto</th><th class="num">Importe</th></tr></thead><tbody>
+        ${filas.map((f) => `<tr><td class="cod">${f[k]}</td><td>${esc(f.concepto)}</td><td class="num">${fmt(f[v])}</td></tr>`).join('')}</tbody>
+        <tfoot><tr><td colspan="2">Total</td><td class="num">${fmt(filas.reduce((t, f) => t + f[v], 0))}</td></tr></tfoot></table></div>`;
+      return `<details class="panel" open><summary class="cab" style="cursor:pointer"><h3>Ley de Ingresos y Presupuesto de Egresos 2026</h3></summary>
+        <div class="cuerpo">${tabla('Rubro CRI', PPTO.ingresos, 'rubro', 'estimado')}${tabla('Capítulo COG', PPTO.egresos, 'capitulo', 'aprobado')}</div></details>`;
+    }
+    return '';
+  }
+
+  VISTAS.captura = () => {
+    const no = S.actual || 'SI';
+    const op = opPorNo(no);
+    const b = borrador(no);
+    const cal = esGuiada() ? calificar() : null;
+    const i = OPS.indexOf(op);
+    const sucio = !!S.borradores[no];
+    const guardada = !!(S.polizas[no] && S.polizas[no].guardada);
+    const tabs = ['contable', 'presupuestal'];
+    const tabBtn = (t) => {
+      const s = Motor.sumas(Motor.renglonesValidos(b[t]));
+      const ok = s.dif === 0;
+      return `<button role="tab" id="tab-${t}" aria-selected="${UI.tab === t}" data-acc="tab" data-v="${t}">${t === 'contable' ? 'Registro contable' : 'Registro presupuestal'}
+        <span class="marca" data-marca="${t}">${ok ? '✔' : '✘'}</span></button>`;
+    };
+    return `
+    <div class="encab"><div><div class="ruta">Inicio › Captura de pólizas</div><h2>Póliza ${numPoliza(no)}</h2></div>
+      <div class="acciones">
+        <button class="btn" data-acc="mover" data-v="-1" ${i === 0 ? 'disabled' : ''} aria-label="Operación anterior">‹ Anterior</button>
+        <div class="campo"><label for="sel-op" class="sr">Operación</label>
+          <select id="sel-op">${OPS.map((o) => `<option value="${o.no}" ${o.no === no ? 'selected' : ''}>${o.no === 'SI' ? 'SI · Apertura' : 'Operación ' + o.no}${S.polizas[o.no] && S.polizas[o.no].guardada ? ' ✓' : ''}</option>`).join('')}</select></div>
+        <button class="btn" data-acc="mover" data-v="1" ${i === OPS.length - 1 ? 'disabled' : ''} aria-label="Operación siguiente">Siguiente ›</button>
+      </div></div>
+    <div class="operacion-texto"><span class="etq">${no === 'SI' ? 'Póliza de apertura' : 'Operación ' + no} · ${fecha(op.fecha)}</span><br>${esc(op.operacion.replace(/ver hoja /g, 'ver la tabla '))}</div>
+    ${referenciaCaso(no)}
+    <div class="panel">
+      <div class="cuerpo">
+        <div class="poliza-enc">
+          <div class="campo"><label>No. de póliza</label><div class="ro cod">${numPoliza(no)}</div></div>
+          <div class="campo"><label>Tipo</label><div class="ro">${no === 'SI' ? 'Diario (apertura)' : TIPO[no]}</div></div>
+          <div class="campo"><label>Fecha</label><div class="ro cod">${fecha(op.fecha)}</div></div>
+          <div class="campo concepto"><label>Concepto</label><div class="ro" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(op.operacion)}">${esc(op.operacion)}</div></div>
+        </div>
+        ${bloqueado() ? '<div class="aviso info">La evaluación ya fue entregada; las pólizas son de solo lectura.</div>' : ''}
+        <div class="pestanas" role="tablist">${tabs.map(tabBtn).join('')}</div>
+        ${UI.tab === 'presupuestal' ? `<div class="filtros"><div class="campo" style="flex:1 1 320px"><label for="sel-clasif">Clasificación presupuestal (Rubro CRI o Capítulo COG)</label>
+          <select id="sel-clasif" ${bloqueado() ? 'disabled' : ''}>${opcionesClasif(b.clasif)}</select></div></div>` : ''}
+        <div class="tabla-cont">
+          <table class="grid-pol" aria-label="Renglones de la póliza">
+            <thead><tr><th>#</th><th>Cuenta</th><th>Nombre de la cuenta</th><th class="num">Cargo</th><th class="num">Abono</th><th></th></tr></thead>
+            <tbody id="filas"></tbody>
+          </table>
+        </div>
+        <div class="acciones"><button class="btn" data-acc="agregar" ${bloqueado() ? 'disabled' : ''}>+ Agregar renglón</button>
+          <span class="tenue" style="font-size:var(--t-xs)">Tab avanza entre celdas · Enter en el importe crea un renglón nuevo · ↑ ↓ eligen en la lista de cuentas</span></div>
+        <div class="totales" id="totales"></div>
+        <div id="retro">${retroHtml(no, cal)}</div>
+      </div>
+      <div class="pie-poliza">
+        <span id="estado-pol" class="tenue">${guardada ? (sucio ? 'Cambios sin guardar' : 'Póliza guardada') : (sucio ? 'Borrador sin guardar' : 'Póliza nueva')}</span>
+        <div class="acciones">
+          ${sucio && !bloqueado() ? '<button class="btn" data-acc="descartar">Descartar cambios</button>' : ''}
+          <button class="btn prim" id="btn-guardar" data-acc="guardar" ${bloqueado() ? 'disabled' : ''}>Guardar póliza</button>
+        </div>
+      </div>
+    </div>
+    ${esGuiada() ? pistasHtml(no) : ''}`;
+  };
+
+  function retroHtml(no, cal) {
+    const r = UI.retro[no];
+    let h = '';
+    if (r && r.avisos && r.avisos.length) {
+      h += `<div class="aviso adv"><b>Advertencias</b> (no impiden guardar)<ul>${r.avisos.map((a) => `<li>${esc(a)}</li>`).join('')}</ul></div>`;
+    }
+    if (esGuiada() && S.polizas[no] && S.polizas[no].guardada && cal) {
+      const d = cal.detalle.find((x) => x.asiento === no);
+      const cls = { correcto: 'ok', parcial: 'adv', revisar: 'err' }[d.estado];
+      const titulo = { correcto: '✔ Asiento correcto', parcial: '◐ Asiento parcialmente correcto', revisar: '✘ Revise el asiento' }[d.estado];
+      h += `<div class="aviso ${cls}"><b>${titulo}</b> · ${Math.round(d.pct * 100)} %
+        · ${d.coincidentes} de ${d.lineasSol} renglones de la solución coinciden${d.lineasAlumno > d.lineasSol ? ` (usted capturó ${d.lineasAlumno})` : ''}.
+        ${d.compactado ? 'Sus renglones están agrupados distinto, pero los saldos netos por cuenta coinciden.' : ''}
+        ${d.vioSolucion ? 'Consultó la solución: este asiento vale como máximo 50 %.' : ''}
+        ${d.clasifOk === false ? '<br>La clasificación presupuestal (Rubro CRI / Capítulo COG) no corresponde a la operación.' : ''}
+        ${d.estado !== 'correcto' && !d.compactado ? '<br>Los renglones marcados con ✘ no coinciden con la solución (cuenta, lado o importe).' : ''}</div>`;
+    }
+    return h;
+  }
+
+  function pistasHtml(no) {
+    const nivel = S.pistas[no] || 0;
+    const p = Calificador.pistas(no, SOL, CAT);
+    let h = `<div class="panel no-print"><div class="cab"><h3>Pistas</h3><div class="acciones">
+      <button class="btn chico" data-acc="pista" data-v="1" ${nivel >= 1 ? 'disabled' : ''}>Nivel 1 · Momentos</button>
+      <button class="btn chico" data-acc="pista" data-v="2" ${nivel >= 2 ? 'disabled' : ''}>Nivel 2 · Cuentas de mayor</button>
+      <button class="btn chico peligro" data-acc="pista" data-v="3" ${nivel >= 3 ? 'disabled' : ''}>Nivel 3 · Ver solución</button></div></div><div class="cuerpo pistas">`;
+    if (UI.confirmar === 'sol-' + no) {
+      h += `<div class="aviso adv confirmar"><span>Si ve la solución, este asiento valdrá como máximo 50 % aunque después lo capture bien.</span>
+        <button class="btn chico prim" data-acc="ver-solucion">Ver solución</button><button class="btn chico" data-acc="cancelar">Cancelar</button></div>`;
+    }
+    if (!nivel) h += '<p class="tenue">Use las pistas solo si lo necesita. Las dos primeras no afectan su calificación.</p>';
+    if (nivel >= 1) h += `<div><span class="etq">Nivel 1</span><ul>${p.nivel1.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>`;
+    if (nivel >= 2) {
+      h += `<div><span class="etq">Nivel 2 · Cuentas de mayor (3 dígitos) que se afectan</span><ul>${p.nivel2.map((m) => `<li><span class="cod">${m.cuenta}</span> ${esc(m.nombre)} <span class="tenue">(${m.lados})</span></li>`).join('')}</ul></div>`;
+    }
+    if (nivel >= 3) {
+      h += `<div><span class="etq">Nivel 3 · Solución${p.clasif ? ` · Clasificación ${esc(p.clasif)}` : ''}</span><div class="tabla-cont"><table class="t"><thead><tr><th>Cuenta</th><th>Nombre</th><th class="num">Cargo</th><th class="num">Abono</th></tr></thead><tbody>
+        ${p.nivel3.map((l) => `<tr><td class="cod">${Motor.mascara(l.c)}</td><td>${esc(l.d)}</td><td class="num">${l.cargo ? fmt(l.cargo) : ''}</td><td class="num">${l.abono ? fmt(l.abono) : ''}</td></tr>`).join('')}</tbody></table></div></div>`;
+    }
+    return h + '</div></div>';
+  }
+
+  function filasHtml() {
+    const no = S.actual;
+    const b = borrador(no);
+    const filas = b[UI.tab];
+    const r = UI.retro[no];
+    const offset = UI.tab === 'presupuestal' ? Motor.renglonesValidos(b.contable).length : 0;
+    let iv = 0;
+    const ro = bloqueado() ? 'readonly' : '';
+    return filas.map((f, i) => {
+      const valido = f.c && (Number(f.cargo) || Number(f.abono));
+      let marca = '';
+      let cls = '';
+      if (r && r.marcas && valido) {
+        const m = r.marcas[offset + iv];
+        cls = m ? 'bien' : 'mal';
+        marca = m ? '<span class="mk" style="color:var(--ok-tinta)">✔</span>' : '<span class="mk" style="color:var(--error-tinta)">✘</span>';
+      }
+      if (valido) iv++;
+      return `<tr data-i="${i}" class="${cls}">
+        <td class="n">${marca || i + 1}</td>
+        <td><input class="cta" data-k="c" data-i="${i}" value="${esc(f.c ? Motor.mascara(f.c) : f.txt || '')}" placeholder="Código o nombre" aria-label="Cuenta del renglón ${i + 1}" autocomplete="off" spellcheck="false" ${ro}></td>
+        <td class="nom"><span class="nombre">${esc(f.c ? nombreCta(f.c) : '')}</span><span class="msg" aria-live="polite"></span></td>
+        <td><input class="imp" data-k="cargo" data-i="${i}" value="${fmtImp(f.cargo)}" inputmode="decimal" aria-label="Cargo del renglón ${i + 1}" ${ro}></td>
+        <td><input class="imp" data-k="abono" data-i="${i}" value="${fmtImp(f.abono)}" inputmode="decimal" aria-label="Abono del renglón ${i + 1}" ${ro}></td>
+        <td><button class="del" data-acc="quitar" data-i="${i}" aria-label="Eliminar renglón ${i + 1}" ${bloqueado() ? 'disabled' : ''}>×</button></td></tr>`;
+    }).join('');
+  }
+
+  function erroresPoliza(b) {
+    const errores = [];
+    ['contable', 'presupuestal'].forEach((t) => {
+      b[t].forEach((f, i) => {
+        const e = f.txt && !f.c ? 'Elija una cuenta de la lista.' : Motor.validarRenglon(f, t, IDX);
+        if (e) errores.push({ t, i, e });
+      });
+    });
+    return errores;
+  }
+
+  /* Actualiza mensajes, totales y botón sin redibujar los campos (conserva el foco). */
+  function actualizarCaptura() {
+    if (!$('#filas')) return;
+    const no = S.actual;
+    const b = borrador(no);
+    const errores = erroresPoliza(b);
+    $$('#filas tr').forEach((tr) => {
+      const i = Number(tr.dataset.i);
+      const e = errores.find((x) => x.t === UI.tab && x.i === i);
+      tr.classList.toggle('err', !!e);
+      $('.msg', tr).textContent = e ? e.e : '';
+      const f = b[UI.tab][i];
+      $('.nombre', tr).textContent = f && f.c ? nombreCta(f.c) : '';
+    });
+    const s = {};
+    ['contable', 'presupuestal'].forEach((t) => {
+      s[t] = Motor.sumas(Motor.renglonesValidos(b[t]));
+      const m = $(`[data-marca="${t}"]`);
+      if (m) m.textContent = s[t].dif === 0 ? '✔' : '✘';
+    });
+    const act = s[UI.tab];
+    const otra = UI.tab === 'contable' ? 'presupuestal' : 'contable';
+    $('#totales').innerHTML = `
+      <div><span class="etq">Total cargos</span><b>${fmt(act.cargos)}</b></div>
+      <div><span class="etq">Total abonos</span><b>${fmt(act.abonos)}</b></div>
+      <div class="${act.dif === 0 ? 'dif-bien' : 'dif-mal'}"><span class="etq">Diferencia</span><b>${act.dif === 0 ? '✔ $0.00' : fmt(Math.abs(act.dif))}</b></div>
+      <div class="${s[otra].dif === 0 ? 'dif-bien' : 'dif-mal'}"><span class="etq">Registro ${otra}</span><b>${s[otra].dif === 0 ? '✔ Cuadra' : 'Dif. ' + fmt(Math.abs(s[otra].dif))}</b></div>`;
+    const hayLineas = Motor.renglonesValidos(b.contable).length + Motor.renglonesValidos(b.presupuestal).length > 0;
+    const faltaClasif = Motor.renglonesValidos(b.presupuestal).length > 0 && !b.clasif;
+    const ok = !bloqueado() && hayLineas && !errores.length && s.contable.dif === 0 && s.presupuestal.dif === 0 && !faltaClasif;
+    const btn = $('#btn-guardar');
+    btn.disabled = !ok;
+    let motivo = '';
+    if (!hayLineas) motivo = 'Capture al menos un renglón.';
+    else if (errores.length) motivo = 'Corrija los renglones marcados en rojo.';
+    else if (s.contable.dif !== 0 || s.presupuestal.dif !== 0) motivo = 'Cada pestaña debe cuadrar (cargos = abonos).';
+    else if (faltaClasif) motivo = 'Seleccione la clasificación presupuestal en la pestaña Registro presupuestal.';
+    btn.title = motivo;
+    const ep = $('#estado-pol');
+    if (ep && motivo && !bloqueado()) ep.textContent = motivo;
+    else if (ep) ep.textContent = S.borradores[no] ? 'Listo para guardar' : (S.polizas[no] ? 'Póliza guardada' : 'Póliza nueva');
+  }
+
+  function prepararCaptura() {
+    $('#filas').innerHTML = filasHtml();
+    actualizarCaptura();
+  }
+
+  function guardarPoliza() {
+    const no = S.actual;
+    const b = borrador(no);
+    const limpia = (rs) => Motor.renglonesValidos(rs).map((f) => ({ c: f.c, cargo: Number(f.cargo) || '', abono: Number(f.abono) || '' }));
+    const p = { contable: limpia(b.contable), presupuestal: limpia(b.presupuestal), clasif: b.clasif || '', guardada: true, ts: new Date().toISOString() };
+    if (!p.presupuestal.length) p.clasif = '';
+    S.polizas[no] = p;
+    delete S.borradores[no];
+    persistir(true);
+    // Advertencias de secuencia de momentos y sobregiros del capítulo/rubro afectado
+    const avisos = Motor.advertenciasPoliza(p.presupuestal);
+    if (p.clasif && p.clasif !== 'NA') {
+      Motor.advertenciasMomentos(lineas(), PPTO)
+        .filter((a) => a.startsWith(`Capítulo ${p.clasif}:`) || a.startsWith(`Rubro ${p.clasif}:`))
+        .forEach((a) => avisos.push(a));
+    }
+    const retro = { avisos };
+    if (esGuiada()) {
+      const todas = [...p.contable, ...p.presupuestal];
+      retro.marcas = Calificador.compararAsiento(todas, SOL.filter((l) => l.a === no)).marcas;
+      const d = calificar().detalle.find((x) => x.asiento === no);
+      toast(`Póliza ${numPoliza(no)} guardada · ${ESTADO_TXT[d.estado]}`);
+    } else {
+      toast(`Póliza ${numPoliza(no)} guardada.`);
+    }
+    UI.retro[no] = retro;
+    render();
+  }
+
+  /* ---------- autocompletado de cuentas ---------- */
+  const SUG = document.createElement('div');
+  SUG.className = 'sugerencias'; SUG.hidden = true; SUG.setAttribute('role', 'listbox');
+  document.body.appendChild(SUG);
+  let sugInput = null, sugItems = [], sugAct = 0, sugFiltro = null;
+
+  function buscarCuentas(q, filtro) {
+    const t = norm(q).trim();
+    const dig = t.replace(/[-\s]/g, '');
+    let r = CAT.filter((c) => !filtro || filtro(c.c));
+    if (!t) r = r.filter((c) => c.det);
+    else if (/^\d+$/.test(dig)) r = r.filter((c) => c.c.startsWith(dig));
+    else {
+      const ps = t.split(/\s+/);
+      r = r.filter((c) => { const n = BUSCA.get(c.c); return ps.every((p) => n.includes(p)); });
+    }
+    return r.slice(0, 80);
+  }
+  function abrirSug(input, filtro) {
+    sugInput = input; sugFiltro = filtro;
+    const q = input.value;
+    sugItems = buscarCuentas(/^\d[\d-]*$/.test(q) && q.length === 18 ? '' : q, filtro);
+    sugAct = Math.max(0, sugItems.findIndex((c) => c.det));
+    pintarSug();
+  }
+  function pintarSug() {
+    if (!sugInput) return;
+    SUG.innerHTML = sugItems.length
+      ? sugItems.map((c, i) => `<div role="option" data-i="${i}" class="${c.det ? '' : 'mayor'} ${i === sugAct ? 'act' : ''}" aria-selected="${i === sugAct}">
+          <span class="cod">${Motor.mascara(c.c)}</span><span>${esc(c.d)}</span>${c.det ? '' : '<span class="tag">Mayor</span>'}</div>`).join('')
+      : '<span class="vacio" style="padding:8px 10px">Ninguna cuenta coincide. Escriba parte del código o del nombre.</span>';
+    const r = sugInput.getBoundingClientRect();
+    SUG.style.left = Math.max(8, Math.min(r.left + window.scrollX, window.scrollX + document.documentElement.clientWidth - SUG.offsetWidth - 8)) + 'px';
+    SUG.style.top = (r.bottom + window.scrollY + 2) + 'px';
+    SUG.hidden = false;
+    const a = SUG.querySelector('.act');
+    if (a) a.scrollIntoView({ block: 'nearest' });
+  }
+  function cerrarSug() { SUG.hidden = true; sugInput = null; }
+  SUG.addEventListener('mousedown', (e) => e.preventDefault());
+  SUG.addEventListener('click', (e) => {
+    const d = e.target.closest('[data-i]');
+    if (d && sugInput) elegirCuenta(sugInput, sugItems[Number(d.dataset.i)]);
+  });
+
+  function elegirCuenta(input, cta) {
+    if (input.id === 'mayor-cta') {
+      UI.mayor = cta.c; cerrarSug(); render(); return;
+    }
+    const i = Number(input.dataset.i);
+    const b = editar(S.actual);
+    b[UI.tab][i].c = cta.c;
+    delete b[UI.tab][i].txt;
+    input.value = Motor.mascara(cta.c);
+    cerrarSug();
+    persistir();
+    actualizarCaptura();
+    if (cta.det) {
+      const sig = $(`input[data-k="cargo"][data-i="${i}"]`);
+      if (sig) sig.focus();
+    }
+  }
+  /* Interpreta lo que se escribió en Cuenta: código completo o nombre con una sola coincidencia. */
+  function resolverTexto(v, actual) {
+    v = (v || '').trim();
+    const dig = v.replace(/[-\s]/g, '');
+    if (!v) return { c: '' };
+    if (/^\d{12}$/.test(dig)) return { c: dig };
+    if (actual.c && v === Motor.mascara(actual.c)) return { c: actual.c };
+    const r = buscarCuentas(v, filtroTab()).filter((x) => x.det);
+    return r.length === 1 ? { c: r[0].c } : { c: '', txt: v };
+  }
+  function resolverCuentaEscrita(input) {
+    const i = Number(input.dataset.i);
+    const actual = borrador(S.actual)[UI.tab][i];
+    if (!actual) return;
+    const vivo = input.isConnected;
+    const { c, txt } = resolverTexto(vivo ? input.value : (actual.txt || (actual.c && Motor.mascara(actual.c))), actual);
+    if (vivo && c) input.value = Motor.mascara(c);
+    if (c !== actual.c || txt !== actual.txt) {
+      const f = editar(S.actual)[UI.tab][i];
+      f.c = c;
+      if (txt) f.txt = txt; else delete f.txt;
+      persistir();
+    }
+    if (!vivo) { // la tabla se redibujó: actualizar la celda nueva sin mover el foco
+      const nuevo = $(`#filas input.cta[data-i="${i}"]`);
+      if (nuevo && nuevo !== document.activeElement) nuevo.value = c ? Motor.mascara(c) : (txt || '');
+    }
+    actualizarCaptura();
+  }
+  const filtroTab = () => (UI.tab === 'presupuestal' ? (c) => c[0] === '8' : (c) => c[0] !== '8');
+
+  /* ---------------- Libro Diario ---------------- */
+  VISTAS.diario = () => {
+    const ls = lineas();
+    const f = UI.dFiltro;
+    const q = norm(f.c).replace(/-/g, '');
+    const vis = ls.filter((l) => (!f.a || l.a === f.a) && (!f.t || l.t === f.t)
+      && (!q || l.c.startsWith(q) || norm(nombreCta(l.c)).includes(q)));
+    const tc = vis.reduce((s, l) => s + l.cargo, 0), ta = vis.reduce((s, l) => s + l.abono, 0);
+    let prev = null;
+    return `
+    <div class="encab"><div><div class="ruta">Inicio › Libro Diario</div><h2>Libro Diario</h2></div></div>
+    <div class="panel"><div class="cuerpo">
+      <div class="filtros">
+        <div class="campo"><label for="fd-a">Asiento</label><select id="fd-a" data-filtro="a"><option value="">Todos</option>${OPS.map((o) => `<option ${f.a === o.no ? 'selected' : ''}>${o.no}</option>`).join('')}</select></div>
+        <div class="campo"><label for="fd-t">Tipo</label><select id="fd-t" data-filtro="t"><option value="">Todos</option>${['Apertura', 'Contable', 'Presupuestal'].map((t) => `<option ${f.t === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+        <div class="campo" style="flex:1 1 220px"><label for="fd-c">Cuenta (código o nombre)</label><input id="fd-c" data-filtro="c" value="${esc(f.c)}" placeholder="Ej. 8250 o bancos"></div>
+      </div>
+      <div class="tabla-cont"><table class="t"><thead><tr><th>Póliza</th><th>Tipo</th><th>Código</th><th>Cuenta</th><th>Clasif.</th><th class="num">Cargo</th><th class="num">Abono</th></tr></thead>
+        <tbody>${vis.map((l) => { const nuevo = l.a !== prev; prev = l.a; return `<tr ${nuevo ? 'style="border-top:2px solid var(--linea-fuerte)"' : ''}>
+          <td>${nuevo ? `<a href="#captura" data-acc="abrir" data-no="${l.a}" class="cod">${numPoliza(l.a)}</a>` : ''}</td><td>${l.t}</td><td class="cod">${Motor.mascara(l.c)}</td><td>${esc(nombreCta(l.c))}</td><td class="cod">${esc(l.clasif)}</td>
+          <td class="num">${l.cargo ? fmt(l.cargo) : ''}</td><td class="num">${l.abono ? fmt(l.abono) : ''}</td></tr>`; }).join('')
+          || '<tr><td colspan="7" class="tenue">Aún no hay pólizas guardadas que coincidan con el filtro.</td></tr>'}</tbody>
+        <tfoot><tr><td colspan="5">Sumas (${vis.length} renglones) ${Motor.igual(tc, ta) ? '· ✔ Cuadra' : '· ✘ No cuadra'}</td><td class="num">${fmt(tc)}</td><td class="num">${fmt(ta)}</td></tr></tfoot></table></div>
+    </div></div>`;
+  };
+
+  /* ---------------- Mayor / Cuentas T ---------------- */
+  VISTAS.mayor = () => {
+    const ls = lineas();
+    const cta = IDX.get(UI.mayor) || IDX.get('111210010001');
+    const mov = ls.filter((l) => l.c.startsWith(cta.pre));
+    const si = r2(mov.filter((l) => l.t === 'Apertura').reduce((s, l) => s + l.cargo - l.abono, 0));
+    const cargos = mov.filter((l) => l.t !== 'Apertura' && l.cargo);
+    const abonos = mov.filter((l) => l.t !== 'Apertura' && l.abono);
+    const sd = r2((si > 0 ? si : 0) + cargos.reduce((s, l) => s + l.cargo, 0));
+    const sa = r2((si < 0 ? -si : 0) + abonos.reduce((s, l) => s + l.abono, 0));
+    const saldo = r2(sd - sa);
+    const conMov = [...new Set(ls.map((l) => l.c))].sort();
+    const fila = (ref, v) => `<div class="mov"><span class="ref">${ref}</span><span>${fmt(v)}</span></div>`;
+    return `
+    <div class="encab"><div><div class="ruta">Inicio › Mayor</div><h2>Mayor / Cuentas T</h2></div></div>
+    <div class="panel"><div class="cuerpo">
+      <div class="campo" style="max-width:560px"><label for="mayor-cta">Cuenta (detalle o mayor)</label>
+        <input id="mayor-cta" value="${Motor.mascara(cta.c)}" autocomplete="off" spellcheck="false" placeholder="Código o nombre"></div>
+      <div class="cuenta-t" aria-label="Cuenta T">
+        <div class="tit"><span class="cod">${Motor.mascara(cta.c)}</span><br>${esc(cta.d)} <span class="tenue">· naturaleza ${cta.nat === 'D' ? 'deudora' : 'acreedora'}${cta.det ? '' : ' · cuenta de mayor'}</span></div>
+        <div class="cols">
+          <div class="col"><span class="etq">Debe (cargos)</span>${si > 0 ? fila('S.I.', si) : ''}${cargos.map((l) => fila(numPoliza(l.a), l.cargo)).join('')}<div class="mov sum"><span>Suma</span><span>${fmt(sd)}</span></div></div>
+          <div class="col"><span class="etq">Haber (abonos)</span>${si < 0 ? fila('S.I.', -si) : ''}${abonos.map((l) => fila(numPoliza(l.a), l.abono)).join('')}<div class="mov sum"><span>Suma</span><span>${fmt(sa)}</span></div></div>
+        </div>
+        <div class="saldo">Saldo final: ${fmt(Math.abs(saldo))} ${saldo > 0 ? 'deudor' : saldo < 0 ? 'acreedor' : ''}</div>
+      </div>
+    </div></div>
+    <div class="panel"><div class="cab"><h3>Cuentas con movimiento</h3></div><div class="cuerpo"><div class="acciones">
+      ${conMov.map((c) => `<button class="btn chico ${c === cta.c ? 'prim' : ''}" data-acc="ver-mayor" data-v="${c}" title="${esc(nombreCta(c))}">${Motor.mascara(c)}</button>`).join('') || '<span class="tenue">Guarde pólizas para ver aquí sus cuentas.</span>'}
+    </div></div></div>`;
+  };
+
+  /* ---------------- Balanza ---------------- */
+  VISTAS.balanza = () => {
+    const bz = Motor.balanza(lineas(), CAT);
+    const filas = bz.filas.filter((f) => f.niv <= UI.bzNivel && (!UI.bzMov || f.si || f.cargos || f.abonos));
+    const det = bz.filas.filter((f) => f.det);
+    const tot = (k) => det.reduce((s, f) => s + f[k], 0);
+    const resumen = (n, x) => `<div class="aviso ${Motor.igual(x.deudor, x.acreedor) ? 'ok' : 'err'}"><b>${n}</b>: saldos deudores ${fmtTxt(x.deudor)} · saldos acreedores ${fmtTxt(x.acreedor)} ${Motor.igual(x.deudor, x.acreedor) ? '· ✔ sumas iguales' : '· ✘ diferencia ' + fmtTxt(Math.abs(x.deudor - x.acreedor))}</div>`;
+    return `
+    <div class="encab"><div><div class="ruta">Inicio › Balanza</div><h2>Balanza de comprobación</h2></div>
+      <div>${bz.cuadra ? '<span class="estado e-correcto">✔ Balanza cuadrada</span>' : '<span class="estado e-revisar">✘ Balanza descuadrada</span>'}</div></div>
+    ${resumen('Cuentas contables (1 a 7)', bz.contable)}${resumen('Cuentas presupuestales (8)', bz.presupuestal)}
+    <div class="panel"><div class="cuerpo">
+      <div class="filtros">
+        <div class="campo"><label for="bz-niv">Mostrar hasta el nivel</label><select id="bz-niv">${[1, 2, 3, 4, 5, 6, 7].map((n) => `<option value="${n}" ${UI.bzNivel === n ? 'selected' : ''}>Nivel ${n}${n === 7 ? ' (todas)' : ''}</option>`).join('')}</select></div>
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="bz-mov" ${UI.bzMov ? 'checked' : ''}> Solo cuentas con saldo o movimiento</label>
+      </div>
+      <div class="tabla-cont"><table class="t"><thead><tr><th>Código contable</th><th>Cuenta</th><th class="num">Saldo inicial</th><th class="num">Cargos</th><th class="num">Abonos</th><th class="num">Saldo final</th></tr></thead>
+      <tbody>${filas.map((f) => `<tr class="${f.det ? '' : 'mayor'} ${f.niv === 1 ? 'niv1' : ''} clic" data-acc="ver-mayor" data-v="${f.c}" title="Ver cuenta T">
+        <td class="cod">${Motor.mascara(f.c)}</td><td style="padding-left:${(f.niv - 1) * 10 + 9}px">${esc(f.d)}</td>
+        <td class="num">${fmt(f.si, '–')}</td><td class="num">${fmt(f.cargos, '–')}</td><td class="num">${fmt(f.abonos, '–')}</td><td class="num">${fmt(f.saldo, '–')}</td></tr>`).join('')
+        || '<tr><td colspan="6" class="tenue">Sin movimientos. Guarde la póliza de apertura para empezar.</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="2">Sumas de cuentas de detalle (saldos acreedores entre paréntesis)</td><td class="num">${fmt(tot('si'))}</td><td class="num">${fmt(tot('cargos'))}</td><td class="num">${fmt(tot('abonos'))}</td><td class="num">${fmt(tot('saldo'))}</td></tr></tfoot>
+      </table></div>
+    </div></div>`;
+  };
+
+  /* ---------------- Control presupuestal ---------------- */
+  VISTAS.presupuesto = () => {
+    const cp = Motor.presupuesto(lineas(), PPTO);
+    const pct = (a, b) => (b ? (a / b * 100).toFixed(1) + ' %' : '–');
+    const ti = cp.totIngresos, te = cp.totEgresos;
+    return `
+    <div class="encab"><div><div class="ruta">Inicio › Control presupuestal</div><h2>Control presupuestal</h2></div></div>
+    <div class="aviso ${Motor.igual(cp.registrado.estimado, ti.estimado) && Motor.igual(cp.registrado.aprobado, te.aprobado) ? 'ok' : 'info'}">
+      Registrado en cuentas de orden: Ley de Ingresos estimada (811) ${fmtTxt(cp.registrado.estimado)} de ${fmtTxt(ti.estimado)} ·
+      Presupuesto de Egresos aprobado (821) ${fmtTxt(cp.registrado.aprobado)} de ${fmtTxt(te.aprobado)}.</div>
+    <div class="panel"><div class="cab"><h3>Estado analítico de ingresos por rubro (CRI)</h3></div><div class="cuerpo"><div class="tabla-cont">
+      <table class="t"><thead><tr><th>Rubro</th><th>Concepto</th><th class="num">Estimado</th><th class="num">Modificaciones</th><th class="num">Modificado</th><th class="num">Devengado</th><th class="num">Recaudado</th><th class="num">Por recaudar</th><th class="num">% Rec.</th></tr></thead>
+      <tbody>${cp.ingresos.map((i) => `<tr class="${i.alerta ? 'alerta' : ''}" ${i.alerta ? `title="${esc(i.alerta)}"` : ''}><td class="cod">${i.clave}</td><td>${esc(i.concepto)}${i.alerta ? `<br><b class="neg">⚠ ${esc(i.alerta)}</b>` : ''}</td>
+        <td class="num">${fmt(i.estimado, '–')}</td><td class="num">${fmt(i.modificaciones, '–')}</td><td class="num">${fmt(i.modificado, '–')}</td><td class="num">${fmt(i.devengado, '–')}</td><td class="num">${fmt(i.recaudado, '–')}</td><td class="num">${fmt(i.porRecaudar, '–')}</td><td class="num">${pct(i.recaudado, i.modificado)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="2">Total</td><td class="num">${fmt(ti.estimado)}</td><td class="num">${fmt(ti.modificaciones)}</td><td class="num">${fmt(ti.modificado)}</td><td class="num">${fmt(ti.devengado)}</td><td class="num">${fmt(ti.recaudado)}</td><td class="num">${fmt(ti.porRecaudar)}</td><td class="num">${pct(ti.recaudado, ti.modificado)}</td></tr></tfoot></table></div></div></div>
+    <div class="panel"><div class="cab"><h3>Estado del ejercicio del presupuesto de egresos por capítulo (COG)</h3></div><div class="cuerpo"><div class="tabla-cont">
+      <table class="t"><thead><tr><th>Capítulo</th><th>Concepto</th><th class="num">Aprobado</th><th class="num">Modificado</th><th class="num">Comprometido</th><th class="num">Devengado</th><th class="num">Ejercido</th><th class="num">Pagado</th><th class="num">Disponible</th><th class="num">Por pagar</th></tr></thead>
+      <tbody>${cp.egresos.map((e) => `<tr class="${e.alerta ? 'alerta' : ''}"><td class="cod">${e.clave}</td><td>${esc(e.concepto)}${e.alerta ? `<br><b class="neg">⚠ ${esc(e.alerta)}</b>` : ''}</td>
+        <td class="num">${fmt(e.aprobado, '–')}</td><td class="num">${fmt(e.modificado, '–')}</td><td class="num">${fmt(e.comprometido, '–')}</td><td class="num">${fmt(e.devengado, '–')}</td><td class="num">${fmt(e.ejercido, '–')}</td><td class="num">${fmt(e.pagado, '–')}</td><td class="num">${fmt(e.disponible, '–')}</td><td class="num">${fmt(e.porPagar, '–')}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="2">Total</td><td class="num">${fmt(te.aprobado)}</td><td class="num">${fmt(te.modificado)}</td><td class="num">${fmt(te.comprometido)}</td><td class="num">${fmt(te.devengado)}</td><td class="num">${fmt(te.ejercido)}</td><td class="num">${fmt(te.pagado)}</td><td class="num">${fmt(te.disponible)}</td><td class="num">${fmt(te.porPagar)}</td></tr></tfoot></table></div></div></div>`;
+  };
+
+  /* ---------------- Estados financieros ---------------- */
+  VISTAS.estados = () => {
+    const ef = Motor.estados(lineas(), CAT, PPTO);
+    const a = ef.actividades, s = ef.situacion, ci = ef.concIngresos, ce = ef.concEgresos;
+    const fila = (d, v, cls) => `<tr class="${cls || ''}"><td class="${cls === 'ind' ? 'ind' : ''}">${d}</td><td class="num">${fmt(v)}</td></tr>`;
+    const cap = (t) => t.charAt(0) + t.slice(1).toLowerCase();
+    return `
+    <div class="encab"><div><div class="ruta">Inicio › Estados financieros</div><h2>Estados financieros y conciliaciones</h2></div></div>
+    <p class="tenue">Calculados con las pólizas que usted ha guardado. Importes en pesos.</p>
+    <div class="estados">
+      <div class="panel"><div class="cab"><h3>Estado de Actividades</h3><span class="tenue">del 1 de enero al 31 de diciembre de 2026</span></div><div class="cuerpo">
+        <table class="ef"><tbody>
+          <tr class="sec"><td colspan="2">Ingresos y otros beneficios</td></tr>
+          ${a.ingresos.map((x) => fila(cap(x.d), x.v, 'ind')).join('')}
+          ${fila('Total de ingresos y otros beneficios', a.totIngresos, 'sub')}
+          <tr class="sec"><td colspan="2">Gastos y otras pérdidas</td></tr>
+          ${a.gastos.map((x) => fila(cap(x.d), x.v, 'ind')).join('')}
+          ${fila('Total de gastos y otras pérdidas', a.totGastos, 'sub')}
+          ${fila('Resultado del ejercicio (Ahorro / Desahorro)', a.resultado, 'tot')}
+        </tbody></table>
+        <div>Control contra la Balanza: ${ctrl(a.cuadra)}</div></div></div>
+      <div class="panel"><div class="cab"><h3>Estado de Situación Financiera</h3><span class="tenue">al 31 de diciembre de 2026</span></div><div class="cuerpo">
+        <table class="ef"><tbody>
+          <tr class="sec"><td colspan="2">Activo</td></tr>
+          ${s.activo.map((x) => fila(cap(x.d), x.v, 'ind')).join('')}
+          ${fila('Total del activo', s.totActivo, 'sub')}
+          <tr class="sec"><td colspan="2">Pasivo</td></tr>
+          ${s.pasivo.map((x) => fila(cap(x.d), x.v, 'ind')).join('')}
+          ${fila('Total del pasivo', s.totPasivo, 'sub')}
+          <tr class="sec"><td colspan="2">Hacienda pública / patrimonio</td></tr>
+          ${s.hacienda.map((x) => fila(x.c === '321000000000' ? x.d : cap(x.d), x.v, 'ind')).join('')}
+          ${fila('Total hacienda pública / patrimonio', s.totHacienda, 'sub')}
+          ${fila('Total del pasivo y hacienda pública / patrimonio', s.totPasivoHacienda, 'tot')}
+        </tbody></table>
+        <div>Activo = Pasivo + Hacienda: ${ctrl(s.cuadra)}</div></div></div>
+      <div class="panel"><div class="cab"><h3>Conciliación entre los ingresos presupuestarios y contables</h3></div><div class="cuerpo">
+        <table class="ef"><tbody>
+          ${fila('1. Ingresos presupuestarios (devengados)', ci.ingPres, 'sub')}
+          <tr class="sec"><td colspan="2">2. Más: ingresos contables no presupuestarios</td></tr>
+          ${fila('Ganancia por venta de activo fijo', ci.ganancia, 'ind')}
+          ${fila('Otros ingresos contables sin registro presupuestal', ci.otrosIng, 'ind')}
+          <tr class="sec"><td colspan="2">3. Menos: ingresos presupuestarios no contables</td></tr>
+          ${fila('Producto de la enajenación de bienes muebles (Rubro 6)', ci.rubro6, 'ind')}
+          ${fila('4. Ingresos contables (1 + 2 − 3)', ci.ingCont, 'tot')}
+        </tbody></table>
+        <div>Contra el Estado de Actividades (${fmtTxt(a.totIngresos)}): ${ctrl(ci.cuadra)}</div></div></div>
+      <div class="panel"><div class="cab"><h3>Conciliación entre los egresos presupuestarios y los gastos contables</h3></div><div class="cuerpo">
+        <table class="ef"><tbody>
+          ${fila('1. Egresos presupuestarios (devengados)', ce.egrPres, 'sub')}
+          <tr class="sec"><td colspan="2">2. Menos: egresos presupuestarios no contables</td></tr>
+          ${fila('Bienes muebles, inmuebles e intangibles (Cap. 5000)', ce.cap5, 'ind')}
+          ${fila('Obra pública capitalizable (Cap. 6000)', ce.cap6, 'ind')}
+          ${fila('Inversiones financieras – aportación a fideicomiso (Cap. 7000)', ce.cap7, 'ind')}
+          ${fila('Amortización de la deuda pública (Cap. 9000)', ce.cap9, 'ind')}
+          <tr class="sec"><td colspan="2">3. Más: gastos contables no presupuestarios</td></tr>
+          ${fila('Estimaciones, depreciaciones y amortizaciones', ce.deprec, 'ind')}
+          ${fila('Otros gastos contables sin registro presupuestal', ce.otrosGas, 'ind')}
+          ${fila('4. Total del gasto contable (1 − 2 + 3)', ce.gasCont, 'tot')}
+        </tbody></table>
+        <div>Contra el Estado de Actividades (${fmtTxt(a.totGastos)}): ${ctrl(ce.cuadra)}</div></div></div>
+    </div>`;
+  };
+
+  /* ---------------- Resultados ---------------- */
+  function verificaciones() {
+    const ef = Motor.estados(lineas(), CAT, PPTO);
+    return [
+      ['Balanza de comprobación cuadrada', ef.bz.cuadra],
+      ['Activo = Pasivo + Hacienda pública', ef.situacion.cuadra],
+      ['Conciliación de ingresos cuadra', ef.concIngresos.cuadra],
+      ['Conciliación de egresos cuadra', ef.concEgresos.cuadra],
+    ];
+  }
+  VISTAS.resultados = () => {
+    const cal = calificar();
+    const ver = verCalif();
+    const capturadas = OPS.filter((o) => S.polizas[o.no] && S.polizas[o.no].guardada).length;
+    const checks = verificaciones();
+    return `
+    <div class="encab"><div><div class="ruta">Inicio › Resultados</div><h2>Resultados</h2></div></div>
+    <div class="panel"><div class="cuerpo">
+      <div class="califica">
+        <div><span class="etq">Calificación</span><div class="grande">${ver ? cal.calificacion.toFixed(1) : '—'}</div><span class="tenue">${ver ? 'de 10' : 'Se muestra al entregar'}</span></div>
+        <div class="checks"><span class="etq">Verificación final</span>${checks.map(([t, ok]) => `<div>${ctrl(ok, t, t)}</div>`).join('')}</div>
+        <div class="checks"><span class="etq">Avance</span><div>${capturadas} de ${OPS.length} pólizas capturadas</div>
+          ${ver ? `<div>${chip('correcto', cal.correctos + ' correctas')} ${chip('parcial', cal.parciales + ' parciales')} ${chip('revisar', cal.revisar + ' por revisar')}</div>` : ''}
+          ${S.entregado ? `<div class="tenue">Entregado el ${new Date(S.entregado).toLocaleString('es-MX')}</div>` : ''}</div>
+      </div>
+      ${UI.confirmar === 'entregar' ? `<div class="aviso adv confirmar"><span>Al entregar ya no podrá modificar sus pólizas. ${capturadas < OPS.length ? `Tiene ${OPS.length - capturadas} pólizas pendientes.` : ''}</span>
+        <button class="btn chico prim" data-acc="entregar-ok">Entregar evaluación</button><button class="btn chico" data-acc="cancelar">Cancelar</button></div>` : ''}
+      ${UI.confirmar === 'reiniciar' ? `<div class="aviso err confirmar"><span>Se borrarán todas sus pólizas de este navegador. Exporte su avance antes si lo quiere conservar.</span>
+        <button class="btn chico prim" data-acc="reiniciar-ok">Borrar y empezar de nuevo</button><button class="btn chico" data-acc="cancelar">Cancelar</button></div>` : ''}
+      <div class="acciones no-print">
+        ${S.modo === 'evaluacion' && !S.entregado ? '<button class="btn prim" data-acc="entregar">Entregar</button>' : ''}
+        <button class="btn ${S.modo === 'guiada' || S.entregado ? 'prim' : ''}" data-acc="descargar-entrega">Descargar reporte de entrega (.json)</button>
+        <button class="btn" data-acc="descargar-html">Descargar reporte imprimible (.html)</button>
+        ${!EN_ARTIFACT ? '<button class="btn" data-acc="imprimir">Imprimir / PDF</button>' : ''}
+      </div>
+      <p class="tenue">Envíe a su profesor el archivo <b>.json</b>; el reporte <b>.html</b> se abre en cualquier navegador y se puede imprimir o guardar como PDF.</p>
+    </div></div>
+    ${ver ? `<div class="panel"><div class="cab"><h3>Detalle por asiento</h3></div><div class="cuerpo"><div class="tabla-cont">
+      <table class="t"><thead><tr><th>Póliza</th><th>Estado</th><th class="num">Renglones correctos</th><th class="num">Renglones solución</th><th class="num">Renglones alumno</th><th class="num">% acierto</th><th>Notas</th></tr></thead>
+      <tbody>${cal.detalle.map((d) => `<tr class="clic" data-acc="abrir" data-no="${d.asiento}"><td class="cod">${numPoliza(d.asiento)}</td><td>${chip(d.estado)}</td>
+        <td class="num">${d.coincidentes}</td><td class="num">${d.lineasSol}</td><td class="num">${d.lineasAlumno}</td><td class="num">${Math.round(d.pct * 100)} %</td>
+        <td>${[d.compactado ? 'Renglones agrupados (netos iguales)' : '', d.vioSolucion ? 'Consultó la solución' : '', d.clasifOk === false ? 'Clasificación CRI/COG incorrecta' : ''].filter(Boolean).join(' · ')}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="5">Calificación = promedio de % de acierto × 10</td><td class="num">${cal.calificacion.toFixed(1)}</td><td></td></tr></tfoot></table></div></div></div>` : ''}
+    <div class="panel no-print"><div class="cab"><h3>Respaldo del avance</h3></div><div class="cuerpo">
+      <p class="tenue">El avance se guarda solo en este navegador. Exporte un respaldo para continuar en otro equipo o por si se borran los datos del navegador.</p>
+      <div class="acciones"><button class="btn" data-acc="exportar">Exportar avance (.json)</button>
+        <label class="btn" for="f-importar">Importar avance (.json)</label><input type="file" id="f-importar" accept=".json,application/json" hidden>
+        <button class="btn peligro" data-acc="reiniciar">Reiniciar ejercicio</button></div>
+    </div></div>`;
+  };
+
+  function datosEntrega() {
+    const cal = calificar();
+    const cuerpo = {
+      app: 'SCG-Edu', tipo: 'entrega', v: 1, alumno: S.alumno, modo: S.modo,
+      generado: new Date().toISOString(), entregado: S.entregado,
+      calificacion: cal.calificacion,
+      resumen: { correctos: cal.correctos, parciales: cal.parciales, revisar: cal.revisar, pendientes: cal.pendientes },
+      verificacion: Object.fromEntries(verificaciones()),
+      polizas: S.polizas, vistas: S.vistas, pistas: S.pistas,
+    };
+    cuerpo.huella = huella(JSON.stringify([cuerpo.alumno, cuerpo.polizas, cuerpo.vistas, cuerpo.calificacion]));
+    return cuerpo;
+  }
+  const nombreArchivo = (ext) => `SCG-Edu_${(S.alumno.matricula || 'alumno').replace(/[^\w-]/g, '')}_${S.modo}.${ext}`;
+
+  function reporteHtml() {
+    const e = datosEntrega();
+    const cal = calificar();
+    const ver = verCalif();
+    const polizas = OPS.filter((o) => S.polizas[o.no] && S.polizas[o.no].guardada).map((o) => {
+      const p = S.polizas[o.no];
+      const rs = [...p.contable, ...p.presupuestal];
+      return `<h3>${numPoliza(o.no)} · ${fecha(o.fecha)}${p.clasif && p.clasif !== 'NA' ? ' · Clasif. ' + esc(p.clasif) : ''}</h3><p>${esc(o.operacion)}</p>
+        <table><tr><th>Cuenta</th><th>Nombre</th><th>Cargo</th><th>Abono</th></tr>${rs.map((r) => `<tr><td>${Motor.mascara(r.c)}</td><td>${esc(nombreCta(r.c))}</td><td class="n">${r.cargo ? fmtTxt(r.cargo) : ''}</td><td class="n">${r.abono ? fmtTxt(r.abono) : ''}</td></tr>`).join('')}</table>`;
+    }).join('');
+    return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Reporte de entrega SCG-Edu – ${esc(S.alumno.nombre)}</title>
+<style>body{font-family:Segoe UI,Arial,sans-serif;color:#1d2733;max-width:900px;margin:24px auto;padding:0 16px;font-size:13px}
+h1{color:#1F4E78;font-size:20px;border-bottom:3px solid #1F4E78;padding-bottom:6px}h2{color:#1F4E78;font-size:16px;margin-top:24px}h3{font-size:13px;margin:16px 0 4px}
+table{border-collapse:collapse;width:100%;margin:4px 0}th{background:#1F4E78;color:#fff;text-align:left;padding:4px 6px}td{border-bottom:1px solid #d3dbe4;padding:3px 6px}
+.n{text-align:right;font-family:Consolas,monospace;white-space:nowrap}.c{font-size:34px;color:#1F4E78;font-weight:700}</style></head><body>
+<h1>Gobierno del Estado – Ejercicio 2026 · Reporte de entrega</h1>
+<p><b>Alumno:</b> ${esc(S.alumno.nombre)} · <b>Matrícula:</b> ${esc(S.alumno.matricula)} · <b>Grupo:</b> ${esc(S.alumno.grupo || '—')}<br>
+<b>Modo:</b> ${S.modo === 'guiada' ? 'Práctica guiada' : 'Evaluación'} · <b>Generado:</b> ${new Date(e.generado).toLocaleString('es-MX')} ${S.entregado ? '· <b>Entregado:</b> ' + new Date(S.entregado).toLocaleString('es-MX') : ''} · <b>Huella:</b> ${e.huella}</p>
+<p class="c">${ver ? cal.calificacion.toFixed(1) + ' / 10' : 'Calificación pendiente de entrega'}</p>
+<p>${verificaciones().map(([t, ok]) => (ok ? '✔ ' : '✘ ') + t).join(' · ')}</p>
+${ver ? `<h2>Detalle por asiento</h2><table><tr><th>Póliza</th><th>Estado</th><th>Correctos / solución / alumno</th><th>% acierto</th></tr>${cal.detalle.map((d) => `<tr><td>${numPoliza(d.asiento)}</td><td>${ESTADO_TXT[d.estado]}${d.vioSolucion ? ' (vio solución)' : ''}</td><td>${d.coincidentes} / ${d.lineasSol} / ${d.lineasAlumno}</td><td class="n">${Math.round(d.pct * 100)} %</td></tr>`).join('')}</table>` : ''}
+<h2>Pólizas capturadas</h2>${polizas || '<p>Sin pólizas.</p>'}</body></html>`;
+  }
+
+  /* ---------------- Panel del profesor ---------------- */
+  VISTAS.profesor = () => {
+    const filas = UI.profesor;
+    return `
+    <div class="encab"><div><div class="ruta">Panel del profesor</div><h2>Concentrado de calificaciones</h2></div>
+      ${!S.alumno ? '<a class="btn" href="#inicio">‹ Volver al acceso</a>' : ''}</div>
+    <div class="panel"><div class="cuerpo">
+      <p>Cargue los archivos <b>.json</b> de entrega de sus alumnos (puede seleccionar varios a la vez). El sistema vuelve a calificar cada entrega
+      con la solución del caso, así que la calificación no depende de lo que diga el archivo.</p>
+      <div class="acciones"><label class="btn prim" for="f-entregas">Cargar entregas (.json)</label><input type="file" id="f-entregas" accept=".json,application/json" multiple hidden>
+        ${filas.length ? '<button class="btn" data-acc="csv">Descargar concentrado (.csv)</button><button class="btn" data-acc="limpiar-prof">Limpiar lista</button>' : ''}</div>
+      <div class="tabla-cont"><table class="t"><thead><tr><th>Alumno</th><th>Matrícula</th><th>Grupo</th><th>Modo</th><th>Entrega</th><th class="num">Calificación</th><th>Correctas / parciales / revisar / pendientes</th><th class="num">Soluciones vistas</th><th>Integridad</th></tr></thead>
+      <tbody>${filas.map((f) => `<tr><td>${esc(f.nombre)}</td><td class="cod">${esc(f.matricula)}</td><td>${esc(f.grupo)}</td><td>${esc(f.modo)}</td><td>${esc(f.fecha)}</td>
+        <td class="num"><b>${f.calif.toFixed(1)}</b></td><td>${f.res}</td><td class="num">${f.vistas}</td><td>${f.ok ? '<span class="control si">✔ Íntegro</span>' : `<span class="control no">✘ ${esc(f.nota)}</span>`}</td></tr>`).join('')
+        || '<tr><td colspan="9" class="tenue">Aún no ha cargado entregas.</td></tr>'}</tbody></table></div>
+    </div></div>`;
+  };
+  function cargarEntregas(files) {
+    Array.from(files).forEach((file) => {
+      const rd = new FileReader();
+      rd.onload = () => {
+        try {
+          const e = JSON.parse(rd.result);
+          if (e.app !== 'SCG-Edu' || !e.polizas) throw new Error('formato');
+          const cal = Calificador.calificar(e.polizas, SOL, OPS, e.vistas || {}, CLASIF);
+          const h = huella(JSON.stringify([e.alumno, e.polizas, e.vistas, e.calificacion]));
+          let ok = true, nota = '';
+          if (e.huella && h !== e.huella) { ok = false; nota = 'El archivo fue modificado'; }
+          else if (!e.huella) { ok = false; nota = 'Archivo de avance, no de entrega'; }
+          else if (verCalifDe(e) && e.calificacion !== cal.calificacion) { ok = false; nota = `Declaraba ${e.calificacion}`; }
+          const a = e.alumno || {};
+          UI.profesor = UI.profesor.filter((x) => !(x.matricula === a.matricula && x.modo === e.modo));
+          UI.profesor.push({
+            nombre: a.nombre || file.name, matricula: a.matricula || '', grupo: a.grupo || '', modo: e.modo === 'guiada' ? 'Práctica guiada' : 'Evaluación',
+            fecha: e.entregado ? new Date(e.entregado).toLocaleString('es-MX') : (e.generado ? new Date(e.generado).toLocaleString('es-MX') + ' (sin entregar)' : '—'),
+            calif: cal.calificacion, res: `${cal.correctos} / ${cal.parciales} / ${cal.revisar} / ${cal.pendientes}`,
+            vistas: Object.keys(e.vistas || {}).length, ok, nota,
+          });
+          UI.profesor.sort((x, y) => x.nombre.localeCompare(y.nombre, 'es'));
+          render();
+        } catch (err) { toast(`${file.name} no es un archivo de entrega válido.`); }
+      };
+      rd.readAsText(file);
+    });
+  }
+  const verCalifDe = (e) => typeof e.calificacion === 'number';
+
+  /* ---------------- acciones ---------------- */
+  const ACC = {
+    'abrir': (el) => { S.actual = el.dataset.no; UI.tab = 'contable'; UI.confirmar = null; persistir(); ir('captura'); },
+    'siguiente-pendiente': () => {
+      const op = OPS.find((o) => !(S.polizas[o.no] && S.polizas[o.no].guardada)) || OPS[0];
+      S.actual = op.no; UI.tab = 'contable'; persistir(); ir('captura');
+    },
+    'filtro-ops': (el) => { UI.filtroOps = el.dataset.v; render(); },
+    'mover': (el) => {
+      const i = OPS.findIndex((o) => o.no === S.actual) + Number(el.dataset.v);
+      if (OPS[i]) { S.actual = OPS[i].no; UI.tab = 'contable'; UI.confirmar = null; persistir(); render(); window.scrollTo(0, 0); }
+    },
+    'tab': (el) => { UI.tab = el.dataset.v; render(); },
+    'agregar': () => {
+      const b = editar(S.actual); b[UI.tab].push(vacio()); persistir(); render();
+      const ins = $$('#filas input.cta'); if (ins.length) ins[ins.length - 1].focus();
+    },
+    'quitar': (el) => {
+      const b = editar(S.actual); b[UI.tab].splice(Number(el.dataset.i), 1);
+      if (!b[UI.tab].length) b[UI.tab].push(vacio());
+      persistir(); render();
+    },
+    'guardar': () => guardarPoliza(),
+    'descartar': () => { delete S.borradores[S.actual]; delete UI.retro[S.actual]; persistir(); render(); toast('Cambios descartados.'); },
+    'pista': (el) => {
+      const n = Number(el.dataset.v);
+      if (n === 3) { UI.confirmar = 'sol-' + S.actual; render(); return; }
+      S.pistas[S.actual] = Math.max(S.pistas[S.actual] || 0, n); persistir(); render();
+    },
+    'ver-solucion': () => { S.pistas[S.actual] = 3; S.vistas[S.actual] = true; UI.confirmar = null; persistir(true); render(); },
+    'cancelar': () => { UI.confirmar = null; render(); },
+    'ver-mayor': (el) => { UI.mayor = el.dataset.v; ir('mayor'); },
+    'entregar': () => { UI.confirmar = 'entregar'; render(); },
+    'entregar-ok': () => { S.entregado = new Date().toISOString(); UI.confirmar = null; persistir(true); render(); toast('Evaluación entregada. Descargue el reporte y envíelo a su profesor.'); },
+    'reiniciar': () => { UI.confirmar = 'reiniciar'; render(); },
+    'reiniciar-ok': () => { S = nuevoEstado(); UI.confirmar = null; UI.retro = {}; persistir(true); ir('inicio'); },
+    'descargar-entrega': () => guardarArchivo(nombreArchivo('json'), JSON.stringify(datosEntrega(), null, 1)),
+    'descargar-html': () => guardarArchivo(nombreArchivo('html'), reporteHtml(), 'text/html'),
+    'imprimir': () => window.print(),
+    'exportar': () => guardarArchivo(`SCG-Edu_avance_${(S.alumno.matricula || 'alumno').replace(/[^\w-]/g, '')}.json`, JSON.stringify(S, null, 1)),
+    'csv': () => {
+      const cab = ['Alumno', 'Matrícula', 'Grupo', 'Modo', 'Entrega', 'Calificación', 'Correctas/Parciales/Revisar/Pendientes', 'Soluciones vistas', 'Integridad'];
+      const q = (v) => `"${String(v).replace(/"/g, '""')}"`;
+      const txt = [cab].concat(UI.profesor.map((f) => [f.nombre, f.matricula, f.grupo, f.modo, f.fecha, f.calif.toFixed(1), f.res, f.vistas, f.ok ? 'Íntegro' : f.nota]))
+        .map((r) => r.map(q).join(',')).join('\r\n');
+      guardarArchivo('SCG-Edu_concentrado.csv', '﻿' + txt, 'text/csv');
+    },
+    'limpiar-prof': () => { UI.profesor = []; render(); },
+    'cerrar-texto': () => { UI.textoManual = null; render(); },
+    'copiar-texto': () => {
+      const ta = $('#texto-manual');
+      const ok = () => toast('Contenido copiado.');
+      if (navigator.clipboard) navigator.clipboard.writeText(ta.value).then(ok, () => { ta.select(); toast('Seleccionado: presione Ctrl+C.'); });
+      else { ta.select(); toast('Seleccionado: presione Ctrl+C.'); }
+    },
+    'glosario': () => abrirGlosario(),
+  };
+
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-acc]');
+    if (!el || el.disabled) return;
+    const f = ACC[el.dataset.acc];
+    if (f) { e.preventDefault(); f(el); }
+  });
+
+  document.addEventListener('submit', (e) => {
+    if (e.target.id !== 'form-inicio') return;
+    e.preventDefault();
+    const nombre = $('#i-nombre').value.trim(), matricula = $('#i-matricula').value.trim();
+    if (!nombre || !matricula) { toast('Capture su nombre y matrícula.'); return; }
+    S.alumno = { nombre, matricula, grupo: $('#i-grupo').value.trim() };
+    S.modo = $('input[name="modo"]:checked').value;
+    persistir(true);
+    ir('tablero');
+  });
+
+  document.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.id === 'f-importar' && t.files[0]) {
+      const rd = new FileReader();
+      rd.onload = () => {
+        try {
+          const s = JSON.parse(rd.result);
+          if (s.app !== 'SCG-Edu' || !s.polizas || !s.alumno) throw new Error('formato');
+          S = Object.assign(nuevoEstado(), s, { tipo: 'avance' });
+          if (!S.modo) S.modo = 'guiada';
+          UI.retro = {};
+          persistir(true);
+          toast(`Avance importado: ${Object.keys(S.polizas).length} pólizas.`);
+          ir('tablero');
+        } catch (err) { toast('El archivo no es un avance válido de SCG-Edu.'); }
+      };
+      rd.readAsText(t.files[0]);
+    } else if (t.id === 'f-entregas') {
+      cargarEntregas(t.files); t.value = '';
+    } else if (t.id === 'sel-op') {
+      S.actual = t.value; UI.tab = 'contable'; UI.confirmar = null; persistir(); render();
+    } else if (t.id === 'sel-clasif') {
+      editar(S.actual).clasif = t.value; persistir(); actualizarCaptura();
+    } else if (t.dataset.filtro && t.tagName === 'SELECT') {
+      UI.dFiltro[t.dataset.filtro] = t.value; render();
+    } else if (t.id === 'bz-niv') {
+      UI.bzNivel = Number(t.value); render();
+    } else if (t.id === 'bz-mov') {
+      UI.bzMov = t.checked; render();
+    }
+  });
+
+  document.addEventListener('input', (e) => {
+    const t = e.target;
+    if (t.id === 'fd-c') {
+      UI.dFiltro.c = t.value;
+      clearTimeout(t._tm);
+      t._tm = setTimeout(() => { render(); const n = $('#fd-c'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 300);
+      return;
+    }
+    if (t.id === 'mayor-cta') { abrirSug(t, null); return; }
+    if (!t.dataset.k || !$('#filas')) return;
+    const i = Number(t.dataset.i);
+    const b = editar(S.actual);
+    const f = b[UI.tab][i];
+    if (t.dataset.k === 'c') {
+      const dig = t.value.replace(/[-\s]/g, '');
+      if (/^\d{12}$/.test(dig)) { f.c = dig; delete f.txt; } else { f.c = ''; f.txt = t.value; }
+      abrirSug(t, filtroTab());
+    } else {
+      const v = parseImp(t.value);
+      f[t.dataset.k] = Number.isNaN(v) ? '' : v;
+    }
+    persistir();
+    actualizarCaptura();
+    const m = $(`#filas tr[data-i="${i}"] .msg`);
+    if (m && t.dataset.k !== 'c' && Number.isNaN(parseImp(t.value))) m.textContent = 'Importe no válido: use solo números, por ejemplo 1,250,000.00';
+  });
+
+  document.addEventListener('focusin', (e) => {
+    const t = e.target;
+    if (t.matches && t.matches('#filas input.cta') && !t.readOnly) abrirSug(t, filtroTab());
+    else if (t.id === 'mayor-cta') { t.select(); abrirSug(t, null); }
+    else if (sugInput && t !== sugInput) cerrarSug();
+  });
+  document.addEventListener('focusout', (e) => {
+    const t = e.target;
+    if (t.matches && t.matches('#filas input.cta') && !t.readOnly) {
+      setTimeout(() => { if (document.activeElement !== t) { if (sugInput === t) cerrarSug(); resolverCuentaEscrita(t); } }, 120);
+    } else if (t.matches && t.matches('#filas input.imp')) {
+      const v = parseImp(t.value);
+      if (!Number.isNaN(v)) t.value = fmtImp(v);
+    } else if (t.id === 'mayor-cta') {
+      setTimeout(() => { if (sugInput === t && document.activeElement !== t) cerrarSug(); }, 120);
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const t = e.target;
+    if (e.key === 'Escape') {
+      if (!SUG.hidden) { cerrarSug(); return; }
+      if (!$('#glosario').hidden) { cerrarGlosario(); return; }
+    }
+    if (sugInput === t && !SUG.hidden) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        sugAct = Math.max(0, Math.min(sugItems.length - 1, sugAct + (e.key === 'ArrowDown' ? 1 : -1)));
+        pintarSug(); return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (sugItems[sugAct]) elegirCuenta(t, sugItems[sugAct]);
+        return;
+      }
+    }
+    if (e.key === 'Enter' && t.matches && t.matches('#filas input.imp')) {
+      e.preventDefault();
+      const i = Number(t.dataset.i);
+      const v = parseImp(t.value);
+      if (!Number.isNaN(v)) t.value = fmtImp(v);
+      const b = editar(S.actual);
+      if (i === b[UI.tab].length - 1) {
+        b[UI.tab].push(vacio()); persistir(); prepararCaptura();
+      }
+      const sig = $(`#filas input.cta[data-i="${i + 1}"]`);
+      if (sig) sig.focus();
+    }
+  });
+
+  /* ---------------- Glosario ---------------- */
+  function abrirGlosario() { $('#glosario').hidden = false; $('#glosario').focus(); }
+  function cerrarGlosario() { $('#glosario').hidden = true; $('#btn-glosario').focus(); }
+  function glosarioHtml() {
+    const egr = [
+      ['821', 'Aprobado', 'Asignaciones anuales autorizadas en el Presupuesto de Egresos.'],
+      ['822.1', 'Por ejercer', 'Presupuesto aprobado disponible, aún sin afectar.'],
+      ['822.2', 'Precomprometido', 'Reserva por una requisición o solicitud autorizada, antes de formalizar con el tercero.'],
+      ['824', 'Comprometido', 'Acto administrativo o instrumento jurídico que formaliza la relación con terceros (contrato, pedido, nómina).'],
+      ['825', 'Devengado', 'Obligación de pago por la recepción de conformidad de bienes, servicios u obra.'],
+      ['826', 'Ejercido', 'Emisión de la cuenta por liquidar certificada u orden de pago aprobada.'],
+      ['827', 'Pagado', 'Cancelación total o parcial de la obligación mediante el desembolso.'],
+    ];
+    const ing = [
+      ['811', 'Estimada', 'Importes anuales aprobados en la Ley de Ingresos.'],
+      ['812', 'Por ejecutar', 'Ley de Ingresos estimada pendiente de devengar.'],
+      ['813', 'Modificaciones', 'Incrementos o disminuciones a la Ley de Ingresos estimada.'],
+      ['814', 'Devengada', 'Nace jurídicamente el derecho de cobro.'],
+      ['815', 'Recaudada', 'Cobro en efectivo o por cualquier otro medio.'],
+    ];
+    const tabla = (ls) => `<table>${ls.map(([c, n, d]) => `<tr><td class="cod"><b>${c}</b></td><td><b>${n}</b><br><span class="tenue">${d}</span></td></tr>`).join('')}</table>`;
+    return `
+      <div class="encab"><h2 style="font-size:var(--t-l)">Glosario</h2><button class="btn chico" id="cerrar-glosario">Cerrar ✕</button></div>
+      <h3>Momentos contables del egreso</h3>
+      <div class="flujo"><span>821</span><i>→</i><span>822.1</span><i>→</i><span>822.2</span><i>→</i><span>824</span><i>→</i><span>825</span><i>→</i><span>826</span><i>→</i><span>827</span></div>
+      <p class="tenue" style="font-size:var(--t-s)">Cada momento se registra con cargo a la cuenta del momento nuevo y abono a la del momento anterior.</p>
+      ${tabla(egr)}
+      <h3>Momentos contables del ingreso</h3>
+      <div class="flujo"><span>811</span><i>→</i><span>812</span><i>→</i><span>814</span><i>→</i><span>815</span></div>
+      ${tabla(ing)}
+      <h3>Naturaleza de las cuentas</h3>
+      <table>
+        <tr><td class="cod"><b>1</b></td><td>Activo · deudora (aumenta con cargos)</td></tr>
+        <tr><td class="cod"><b>2</b></td><td>Pasivo · acreedora (aumenta con abonos)</td></tr>
+        <tr><td class="cod"><b>3</b></td><td>Hacienda pública / patrimonio · acreedora</td></tr>
+        <tr><td class="cod"><b>4</b></td><td>Ingresos y otros beneficios · acreedora</td></tr>
+        <tr><td class="cod"><b>5</b></td><td>Gastos y otras pérdidas · deudora</td></tr>
+        <tr><td class="cod"><b>8</b></td><td>Cuentas de orden presupuestarias · se registran en la pestaña Registro presupuestal</td></tr>
+      </table>
+      <h3>Clasificador por Rubros de Ingresos (CRI)</h3>
+      <table>${PPTO.ingresos.map((i) => `<tr><td class="cod"><b>${i.rubro}</b></td><td>${esc(i.concepto)}</td></tr>`).join('')}</table>
+      <h3>Clasificador por Objeto del Gasto (COG)</h3>
+      <table>${PPTO.egresos.map((e) => `<tr><td class="cod"><b>${e.capitulo}</b></td><td>${esc(e.concepto)}</td></tr>`).join('')}</table>
+      <h3>Máscara del código contable</h3>
+      <p style="font-size:var(--t-s)"><span class="cod">0-0-0-0-0-000-0000</span>: género, grupo, rubro, cuenta, subcuenta, auxiliar y subauxiliar.
+      Solo se capturan cuentas de último nivel (detalle).</p>
+      <h3>Tipos de póliza</h3>
+      <table><tr><td><b>Ingreso</b></td><td>Entrada de dinero a bancos.</td></tr><tr><td><b>Egreso</b></td><td>Salida de dinero de bancos.</td></tr><tr><td><b>Diario</b></td><td>Operaciones sin movimiento de bancos.</td></tr></table>
+      <h3>Base normativa</h3>
+      <p class="tenue" style="font-size:var(--t-s)">Ley General de Contabilidad Gubernamental (LGCG), Plan de Cuentas, CRI, COG y Normas y Metodología para la Determinación de los Momentos Contables de los Egresos y de los Ingresos emitidos por el CONAC.</p>`;
+  }
+
+  /* ---------------- arranque ---------------- */
+  $('#glosario').innerHTML = glosarioHtml();
+  $('#btn-glosario').addEventListener('click', abrirGlosario);
+  $('#glosario').addEventListener('click', (e) => { if (e.target.id === 'cerrar-glosario') cerrarGlosario(); });
+  window.addEventListener('resize', () => { if (sugInput) pintarSug(); });
+  window.addEventListener('scroll', () => { if (sugInput) pintarSug(); }, { passive: true });
+  render();
+})();
+
+</script>
+
+</body>
+</html>
