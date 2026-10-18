@@ -623,8 +623,14 @@ window.SCG_DATA = {"catalogo":[{"c":"100000000000","d":"ACTIVO","det":false,"nat
     return avisos;
   }
 
+  /* Cuentas de detalle cuyo saldo final es contrario a su naturaleza
+     (deudora con saldo acreedor o acreedora con saldo deudor). */
+  function saldosContrarios(bz) {
+    return bz.filas.filter((f) => f.det && ((f.nat === 'D' && f.saldo < -TOL) || (f.nat === 'A' && f.saldo > TOL)));
+  }
+
   const api = {
-    PREFIJO, cent, r2, igual, mascara, indiceCatalogo, tabDeCuenta, validarRenglon, sumas,
+    saldosContrarios, PREFIJO, cent, r2, igual, mascara, indiceCatalogo, tabDeCuenta, validarRenglon, sumas,
     renglonesValidos, diario, balanza, saldo, presupuesto, estados,
     advertenciasMomentos, advertenciasPoliza, SECUENCIA_EGRESO, SECUENCIA_INGRESO,
   };
@@ -1280,6 +1286,10 @@ window.SCG_DATA = {"catalogo":[{"c":"100000000000","d":"ACTIVO","det":false,"nat
         .filter((a) => a.startsWith(`Capítulo ${p.clasif}:`) || a.startsWith(`Rubro ${p.clasif}:`))
         .forEach((a) => avisos.push(a));
     }
+    const bzAhora = Motor.balanza(lineas(), CAT);
+    const tocadas = new Set([...p.contable, ...p.presupuestal].map((r) => r.c));
+    Motor.saldosContrarios(bzAhora).filter((f) => tocadas.has(f.c)).forEach((f) => avisos.push(
+      `La cuenta ${Motor.mascara(f.c)} ${f.d} es de naturaleza ${f.nat === 'D' ? 'deudora' : 'acreedora'} y quedó con saldo ${f.saldo > 0 ? 'deudor' : 'acreedor'} de ${fmtTxt(Math.abs(f.saldo))}. Revise si invirtió cargo y abono.`));
     const retro = { avisos };
     if (esGuiada()) {
       const todas = [...p.contable, ...p.presupuestal];
@@ -1448,24 +1458,37 @@ window.SCG_DATA = {"catalogo":[{"c":"100000000000","d":"ACTIVO","det":false,"nat
   VISTAS.balanza = () => {
     const bz = Motor.balanza(lineas(), CAT);
     const filas = bz.filas.filter((f) => f.niv <= UI.bzNivel && (!UI.bzMov || f.si || f.cargos || f.abonos));
-    const det = bz.filas.filter((f) => f.det);
-    const tot = (k) => det.reduce((s, f) => s + f[k], 0);
+    const contrarias = Motor.saldosContrarios(bz);
+    const esContraria = new Set(contrarias.map((f) => f.c));
+    const d = (v) => fmt(Math.max(v, 0), '–');
+    const a = (v) => fmt(Math.max(-v, 0), '–');
+    const sumas = (pred) => {
+      const fs = bz.filas.filter((f) => f.det && pred(f.c[0]));
+      const t = (fn) => fs.reduce((x, f) => x + fn(f), 0);
+      return [t((f) => Math.max(f.si, 0)), t((f) => Math.max(-f.si, 0)), t((f) => f.cargos), t((f) => f.abonos), t((f) => Math.max(f.saldo, 0)), t((f) => Math.max(-f.saldo, 0))];
+    };
+    const pie = (n, v) => `<tr><td colspan="3">${n}</td>${v.map((x) => `<td class="num">${fmt(x)}</td>`).join('')}</tr>`;
     const resumen = (n, x) => `<div class="aviso ${Motor.igual(x.deudor, x.acreedor) ? 'ok' : 'err'}"><b>${n}</b>: saldos deudores ${fmtTxt(x.deudor)} · saldos acreedores ${fmtTxt(x.acreedor)} ${Motor.igual(x.deudor, x.acreedor) ? '· ✔ sumas iguales' : '· ✘ diferencia ' + fmtTxt(Math.abs(x.deudor - x.acreedor))}</div>`;
     return `
     <div class="encab"><div><div class="ruta">Inicio › Balanza</div><h2>Balanza de comprobación</h2></div>
       <div>${bz.cuadra ? '<span class="estado e-correcto">✔ Balanza cuadrada</span>' : '<span class="estado e-revisar">✘ Balanza descuadrada</span>'}</div></div>
     ${resumen('Cuentas contables (1 a 7)', bz.contable)}${resumen('Cuentas presupuestales (8)', bz.presupuestal)}
+    ${contrarias.length ? `<div class="aviso err"><b>⚠ ${contrarias.length} cuenta(s) con saldo contrario a su naturaleza.</b> Revise cargos y abonos de sus pólizas.<ul>${contrarias.map((f) => `<li><span class="cod">${Motor.mascara(f.c)}</span> ${esc(f.d)}: naturaleza ${f.nat === 'D' ? 'deudora' : 'acreedora'}, saldo ${f.saldo > 0 ? 'deudor' : 'acreedor'} de ${fmtTxt(Math.abs(f.saldo))}</li>`).join('')}</ul></div>`
+      : (lineas().length ? '<div class="aviso ok">✔ Todas las cuentas de detalle tienen saldo acorde con su naturaleza.</div>' : '')}
     <div class="panel"><div class="cuerpo">
       <div class="filtros">
         <div class="campo"><label for="bz-niv">Mostrar hasta el nivel</label><select id="bz-niv">${[1, 2, 3, 4, 5, 6, 7].map((n) => `<option value="${n}" ${UI.bzNivel === n ? 'selected' : ''}>Nivel ${n}${n === 7 ? ' (todas)' : ''}</option>`).join('')}</select></div>
         <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="bz-mov" ${UI.bzMov ? 'checked' : ''}> Solo cuentas con saldo o movimiento</label>
       </div>
-      <div class="tabla-cont"><table class="t"><thead><tr><th>Código contable</th><th>Cuenta</th><th class="num">Saldo inicial</th><th class="num">Cargos</th><th class="num">Abonos</th><th class="num">Saldo final</th></tr></thead>
-      <tbody>${filas.map((f) => `<tr class="${f.det ? '' : 'mayor'} ${f.niv === 1 ? 'niv1' : ''} clic" data-acc="ver-mayor" data-v="${f.c}" title="Ver cuenta T">
-        <td class="cod">${Motor.mascara(f.c)}</td><td style="padding-left:${(f.niv - 1) * 10 + 9}px">${esc(f.d)}</td>
-        <td class="num">${fmt(f.si, '–')}</td><td class="num">${fmt(f.cargos, '–')}</td><td class="num">${fmt(f.abonos, '–')}</td><td class="num">${fmt(f.saldo, '–')}</td></tr>`).join('')
-        || '<tr><td colspan="6" class="tenue">Sin movimientos. Guarde la póliza de apertura para empezar.</td></tr>'}</tbody>
-      <tfoot><tr><td colspan="2">Sumas de cuentas de detalle (saldos acreedores entre paréntesis)</td><td class="num">${fmt(tot('si'))}</td><td class="num">${fmt(tot('cargos'))}</td><td class="num">${fmt(tot('abonos'))}</td><td class="num">${fmt(tot('saldo'))}</td></tr></tfoot>
+      <p class="tenue" style="font-size:var(--t-s)">Nat.: D = deudora (aumenta con cargos), A = acreedora (aumenta con abonos). Las cuentas de mayor suman a sus subcuentas.</p>
+      <div class="tabla-cont"><table class="t">
+      <thead><tr><th rowspan="2">Código contable</th><th rowspan="2">Cuenta</th><th rowspan="2">Nat.</th><th colspan="2" style="text-align:center">Saldo inicial</th><th colspan="2" style="text-align:center">Movimientos</th><th colspan="2" style="text-align:center">Saldo final</th></tr>
+        <tr><th class="num">Deudor</th><th class="num">Acreedor</th><th class="num">Cargos</th><th class="num">Abonos</th><th class="num">Deudor</th><th class="num">Acreedor</th></tr></thead>
+      <tbody>${filas.map((f) => `<tr class="${f.det ? '' : 'mayor'} ${f.niv === 1 ? 'niv1' : ''} ${esContraria.has(f.c) ? 'alerta' : ''} clic" data-acc="ver-mayor" data-v="${f.c}" title="${esContraria.has(f.c) ? 'Saldo contrario a su naturaleza · ' : ''}Ver cuenta T">
+        <td class="cod">${Motor.mascara(f.c)}</td><td style="padding-left:${(f.niv - 1) * 10 + 9}px">${esContraria.has(f.c) ? '⚠ ' : ''}${esc(f.d)}</td><td class="cod">${f.nat}</td>
+        <td class="num">${d(f.si)}</td><td class="num">${a(f.si)}</td><td class="num">${fmt(f.cargos, '–')}</td><td class="num">${fmt(f.abonos, '–')}</td><td class="num">${d(f.saldo)}</td><td class="num">${a(f.saldo)}</td></tr>`).join('')
+        || '<tr><td colspan="9" class="tenue">Sin movimientos. Guarde la póliza de apertura para empezar.</td></tr>'}</tbody>
+      <tfoot>${pie('Sumas cuentas contables (1 a 7)', sumas((g) => g !== '8'))}${pie('Sumas cuentas presupuestales (8)', sumas((g) => g === '8'))}</tfoot>
       </table></div>
     </div></div>`;
   };
@@ -1563,6 +1586,7 @@ window.SCG_DATA = {"catalogo":[{"c":"100000000000","d":"ACTIVO","det":false,"nat
       ['Activo = Pasivo + Hacienda pública', ef.situacion.cuadra],
       ['Conciliación de ingresos cuadra', ef.concIngresos.cuadra],
       ['Conciliación de egresos cuadra', ef.concEgresos.cuadra],
+      ['Saldos acordes con la naturaleza de las cuentas', ef.bz.filas.some((f) => f.si || f.cargos || f.abonos) && !Motor.saldosContrarios(ef.bz).length],
     ];
   }
   VISTAS.resultados = () => {
