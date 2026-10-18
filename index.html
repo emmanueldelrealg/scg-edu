@@ -4099,8 +4099,55 @@ ${asientos}</body></html>`;
       <tbody>${filas.map((f) => `<tr><td>${esc(f.nombre)}</td><td class="cod">${esc(f.matricula)}</td><td>${esc(f.grupo)}</td><td class="cod">${esc(f.caso || 'BASE')}</td><td>${esc(f.modo)}</td><td>${esc(f.fecha)}</td>
         <td class="num"><b>${f.calif.toFixed(1)}</b></td><td>${f.res}</td><td class="num">${f.vistas}</td><td>${f.ok ? '<span class="control si">✔ Íntegro</span>' : `<span class="control no">✘ ${esc(f.nota)}</span>`}</td></tr>`).join('')
         || '<tr><td colspan="10" class="tenue">Aún no ha cargado entregas.</td></tr>'}</tbody></table></div>
-    </div></div>`;
+    </div></div>
+    ${contrasenaHtml()}`;
   };
+
+  /* ---------- Cambio de contraseña del profesor ----------
+     El portal es estático: la contraseña vive en index.html como huella (HUELLA_PROFESOR). Este apartado
+     calcula la huella nueva y genera una copia de index.html con ella para subirla a GitHub. */
+  const LINEA_HUELLA = (h) => `const HUELLA_PROFESOR = '${h}';`;
+  function contrasenaHtml() {
+    const c = UI.cambioClave || {};
+    return `<details class="panel" ${c.abierto ? 'open' : ''} data-clave-panel><summary class="cab" style="cursor:pointer"><h3>Cambiar la contraseña del profesor</h3></summary><div class="cuerpo">
+      <p>El portal no tiene servidor, así que la contraseña va dentro del archivo <b>index.html</b>. Escriba la nueva contraseña:
+      el sistema genera una copia de <b>index.html</b> con ella. Súbala a GitHub en lugar de la actual y la contraseña anterior dejará de funcionar.</p>
+      <div class="filtros">
+        <div class="campo"><label for="clave-nueva">Nueva contraseña (mínimo 8 caracteres)</label><input id="clave-nueva" type="password" autocomplete="new-password"></div>
+        <div class="campo"><label for="clave-conf">Repita la nueva contraseña</label><input id="clave-conf" type="password" autocomplete="new-password"></div>
+        <button class="btn prim" data-acc="clave-generar">Generar index.html con la nueva contraseña</button>
+      </div>
+      ${c.huella ? `<div class="aviso ${c.descargado ? 'ok' : 'info'}">
+        ${c.descargado ? '✔ Se descargó <b>index.html</b> con la nueva contraseña.' : 'No fue posible copiar el archivo publicado desde esta vista; haga el cambio a mano en GitHub (pasos 1 a 4).'}
+        <ol style="margin:8px 0 0;padding-left:20px">
+          ${c.descargado ? `<li>En su repositorio de GitHub elija <b>Add file › Upload files</b>, suba el <b>index.html</b> descargado y presione <b>Commit changes</b>.</li>
+          <li>Espere uno o dos minutos, recargue el portal con <b>Ctrl + Shift + R</b> y entre con la nueva contraseña.</li>`
+          : `<li>En GitHub abra <b>index.html</b> y presione el lápiz (<b>Edit this file</b>).</li>
+          <li>Con <b>Ctrl + F</b> busque <span class="cod">${esc(LINEA_HUELLA(HUELLA_PROFESOR))}</span></li>
+          <li>Reemplácela por <span class="cod">${esc(LINEA_HUELLA(c.huella))}</span></li>
+          <li>Presione <b>Commit changes</b>, espere uno o dos minutos y recargue con <b>Ctrl + Shift + R</b>.</li>`}
+        </ol>
+        <p class="tenue" style="margin:8px 0 0">Guarde su nueva contraseña en un lugar seguro: el sistema no puede mostrarla después, porque solo conserva su huella.
+        Si también usa el proyecto completo (.zip), haga el mismo reemplazo en <span class="cod">src/app.js</span>.</p></div>` : ''}
+    </div></details>`;
+  }
+  async function generarIndexConClave() {
+    const n = $('#clave-nueva').value.trim(), c = $('#clave-conf').value.trim();
+    if (n.length < 8) { toast('La contraseña debe tener al menos 8 caracteres.'); return; }
+    if (n.toUpperCase() !== c.toUpperCase()) { toast('Las dos contraseñas no coinciden.'); return; }
+    const h = huella(n.toUpperCase());
+    UI.cambioClave = { abierto: true, huella: h, descargado: false };
+    try {
+      if (EN_ARTIFACT || location.protocol === 'file:') throw new Error('sin acceso al archivo publicado');
+      const r = await fetch(location.pathname, { cache: 'no-store' });
+      const html = await r.text();
+      if (!r.ok || html.split(LINEA_HUELLA(HUELLA_PROFESOR)).length !== 2) throw new Error('archivo no reconocido');
+      await guardarArchivo('index.html', html.replace(LINEA_HUELLA(HUELLA_PROFESOR), LINEA_HUELLA(h)), 'text/html');
+      UI.cambioClave.descargado = true;
+    } catch (e) { /* se muestran los pasos para hacerlo a mano */ }
+    render();
+  }
+
   function cargarEntregas(files) {
     Array.from(files).forEach((file) => {
       const rd = new FileReader();
@@ -4562,6 +4609,7 @@ h2{color:#1F4E78;font-size:16px;margin-top:24px}h3{font-size:13px;margin:16px 0 
     },
     'glosario': () => abrirGlosario(),
     'ejercicio': (el) => cambiarEjercicio(el.dataset.v, vistaActual() === 'profesor' ? 'profesor' : 'entrar'),
+    'clave-generar': () => generarIndexConClave(),
     'prof-salir': () => { UI.profAbierto = false; try { sessionStorage.removeItem(PROF_SESION); } catch (e) { /* nada */ } ir('portal'); },
     'ejercicio-ir': (el) => cambiarEjercicio(el.dataset.v, 'entrar'),
     'verificar-prog': () => { progEstado().verificado = true; persistir(true); render(); toast(`Programación y presupuestación: ${califProg().resumen.programacion.correctos + califProg().resumen.presupuestacion.correctos} campos correctos.`); },
